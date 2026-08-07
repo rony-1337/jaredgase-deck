@@ -1,0 +1,40 @@
+---
+import { pillars } from "../data/pillars";
+---
+
+<ul class="pillars">
+  {
+    pillars.map((p) => (
+      <li class="pillar">
+        <span class="eyebrow">{p.label}</span>
+        <h3 class="pillar-title">{p.title}</h3>
+        <p class="pillar-body">{p.body}</p>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .pillars {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: var(--s-6) var(--s-8);
+  }
+  .pillar {
+    display: grid;
+    gap: var(--s-2);
+    align-content: start;
+    padding-top: var(--s-4);
+    border-top: 2px solid var(--ink);
+  }
+  .pillar-title {
+    font-size: 1.2rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+  .pillar-body {
+    color: var(--ink-soft);
+    font-size: var(--t-small);
+    line-height: 1.55;
+  }
+</style>

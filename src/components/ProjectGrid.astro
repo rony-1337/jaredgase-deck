@@ -1,0 +1,19 @@
+---
+import ProjectCard from "./ProjectCard.astro";
+interface Props {
+  projects: { id: string; data: any }[];
+}
+const { projects } = Astro.props;
+---
+
+<div class="grid-wrap">
+  {projects.map((proj) => <ProjectCard p={proj.data} slug={proj.id} variant="grid" />)}
+</div>
+
+<style>
+  .grid-wrap {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    gap: var(--s-4);
+  }
+</style>

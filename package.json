@@ -1,0 +1,27 @@
+{
+  "name": "deck-jaredgase",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Audience-adaptive interview presentation system for Jared Gase. Three static altitudes (Overview, Panel, Case Studies) plus a live Customize builder, all driven by one content model.",
+  "scripts": {
+    "clean:store": "rm -f .astro/data-store.json",
+    "predev": "npm run clean:store",
+    "dev": "astro dev",
+    "prestart": "npm run clean:store",
+    "start": "astro dev",
+    "prebuild": "npm run clean:store",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "tailor": "node --experimental-strip-types scripts/tailor.ts"
+  },
+  "dependencies": {
+    "astro": "^5.2.5",
+    "flubber": "^0.4.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.7.3"
+  }
+}

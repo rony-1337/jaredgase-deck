@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+.astro/
+
+# env (the Customize builder key lives here, never commit it)
+.env
+.env.production
+.env.local
+
+# os / editor
+.DS_Store
+*.log
+.vscode/
+.idea/
+.smbdelete*
+
+# local working material — reference videos, perf review, build notes.
+# Not part of the deployable site and includes sensitive docs. Keep local only.
+Resources/

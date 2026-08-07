@@ -1,0 +1,79 @@
+---
+import Stat from "./Stat.astro";
+import { quotes, ratings } from "../data/validation";
+
+interface Props {
+  limit?: number;
+  showRatings?: boolean;
+}
+const { limit = 3, showRatings = true } = Astro.props;
+const shown = quotes.slice(0, limit);
+---
+
+<div class="validation">
+  <ul class="quotes">
+    {
+      shown.map((q) => (
+        <li class="quote">
+          <p class="quote-text">{q.text}</p>
+          <p class="quote-attr">{q.attribution}</p>
+        </li>
+      ))
+    }
+  </ul>
+
+  {
+    showRatings && (
+      <div class="ratings">
+        <div class="ratings-stats">
+          {ratings.stats.map((s: any) => (
+            <Stat value={s.value} suffix={s.suffix} label={s.label} />
+          ))}
+        </div>
+        <p class="ratings-src">{ratings.source}</p>
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .quotes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+    gap: var(--s-5);
+  }
+  .quote {
+    padding-left: var(--s-4);
+    border-left: 2px solid color-mix(in srgb, var(--accent) 55%, var(--line));
+  }
+  .quote-text {
+    font-family: var(--font-serif);
+    font-size: 1.0625rem;
+    line-height: 1.5;
+    color: #21262f;
+  }
+  .quote-attr {
+    margin-top: var(--s-3);
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+  }
+  .ratings {
+    margin-top: var(--s-8);
+    padding-top: var(--s-6);
+    border-top: 1px solid var(--line);
+  }
+  .ratings-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-6) var(--s-10);
+  }
+  .ratings-src {
+    margin-top: var(--s-5);
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.05em;
+    color: var(--ink-faint);
+  }
+</style>

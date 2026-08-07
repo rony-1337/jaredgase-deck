@@ -1,0 +1,166 @@
+---
+import { modes } from "../data/site";
+const staticModes = modes.filter((m) => !m.live);
+const liveMode = modes.find((m) => m.live)!;
+
+// icon per static mode, from public/img/projects/icons
+const iconMap: Record<string, string> = {
+  overview: "01_choose_overview.svg",
+  panel: "01_choose_presentation.svg",
+  "case-studies": "01_choose_case-study.svg",
+};
+const iconBase = "/img/projects/icons/";
+---
+
+<section class="chooser" aria-label="Choose how deep to go">
+  <ul class="doors">
+    {
+      staticModes.map((m) => (
+        <li>
+          <a class="door" href={m.href}>
+            {iconMap[m.slug] && (
+              <img class="door-icon" src={`${iconBase}${iconMap[m.slug]}`} alt="" width="48" height="48" loading="lazy" />
+            )}
+            <span class="door-label eyebrow">{m.depthLabel}</span>
+            <span class="door-name">{m.name}</span>
+            <span class="door-blurb">{m.blurb}</span>
+            <span class="door-foot">
+              <span class="door-meta">{m.time}</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+
+  <!-- Customize: visible but disabled for now (the live build modal is the
+       last thing to wire up). Restore the trigger when it's ready. -->
+  <button class="customize is-disabled" type="button" disabled aria-disabled="true">
+    <span class="pulse" aria-hidden="true"><span class="pulse-dot" /></span>
+    <span class="customize-body">
+      <span class="customize-name">{liveMode.name}</span>
+      <span class="customize-note">{liveMode.blurb}</span>
+    </span>
+    <span class="customize-meta">Coming soon</span>
+  </button>
+</section>
+
+<style>
+  .chooser { display: grid; gap: var(--s-4); }
+
+  /* three vertical option cards */
+  .doors {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-4);
+  }
+  .door {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    height: 100%;
+    min-height: 17rem;
+    padding: var(--s-5);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    transition:
+      transform 0.18s var(--ease),
+      border-color 0.18s var(--ease),
+      box-shadow 0.18s var(--ease);
+  }
+  .door:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+    box-shadow: var(--shadow-lift);
+  }
+
+  /* mode icon */
+  .door-icon { width: clamp(40px, 4vw, 52px); height: auto; display: block; }
+
+  .door-label { margin-top: var(--s-1); }
+  .door-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.3rem, 1.1rem + 0.7vw, 1.7rem);
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  .door-blurb {
+    color: var(--ink-soft);
+    font-size: var(--t-small);
+    line-height: 1.45;
+  }
+  .door-foot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: var(--s-3);
+  }
+  .door-meta {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+  }
+  .door .arrow {
+    font-size: 1.25rem;
+    color: var(--ink-faint);
+    transition: transform 0.18s var(--ease), color 0.18s var(--ease);
+  }
+  .door:hover .arrow { color: var(--accent); transform: translateX(3px); }
+
+  /* subtle fourth option: customize, understated */
+  .customize {
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    padding: var(--s-3) var(--s-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    background: transparent;
+    transition: border-color 0.18s var(--ease), background 0.18s var(--ease);
+  }
+  .customize:not(.is-disabled):hover {
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+    background: color-mix(in srgb, var(--accent-wash) 60%, transparent);
+  }
+  /* disabled state: dimmed, no ping, not interactive */
+  .customize.is-disabled { opacity: 0.5; cursor: not-allowed; }
+  .customize.is-disabled .pulse-dot::after { animation: none; }
+  .customize.is-disabled .customize-meta { color: var(--ink-faint); }
+  .pulse { display: grid; place-items: center; width: 14px; height: 14px; flex: none; }
+  .pulse-dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .pulse-dot::after {
+    content: ""; position: absolute; inset: -4px; border-radius: 50%;
+    border: 1.5px solid var(--accent); animation: ping 1.8s var(--ease) infinite;
+  }
+  @keyframes ping {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(1.7); opacity: 0; }
+  }
+  .customize-body { display: flex; align-items: baseline; gap: var(--s-3); min-width: 0; flex: 1; }
+  .customize-name { font-weight: 600; font-size: var(--t-small); flex: none; }
+  .customize-note {
+    color: var(--ink-faint);
+    font-size: var(--t-small);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .customize-meta {
+    font-family: var(--font-mono); font-size: var(--t-label);
+    color: var(--ink-faint); flex: none;
+  }
+  .customize .arrow { font-size: 1.1rem; color: var(--ink-faint); flex: none; transition: transform 0.18s var(--ease), color 0.18s var(--ease); }
+  .customize:hover .arrow { color: var(--accent); transform: translateX(3px); }
+
+  @media (max-width: 52rem) {
+    .doors { grid-template-columns: 1fr; }
+    .door { min-height: 0; }
+    .customize-note { display: none; }
+  }
+</style>

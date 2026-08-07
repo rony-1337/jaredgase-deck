@@ -1,0 +1,178 @@
+---
+import Stat from "./Stat.astro";
+
+interface Props {
+  p: any; // project frontmatter data
+  slug: string;
+  variant?: "grid" | "panel";
+}
+const { p, slug, variant = "grid" } = Astro.props;
+const href = p.caseStudy ? `/case-studies/${slug}` : undefined;
+const tags = [...p.domain].slice(0, 3).map((t: string) => t.replace(/-/g, " "));
+---
+
+{
+  variant === "grid" ? (
+    <Fragment>
+      {href ? (
+        <a class="card grid" href={href}>
+          <span class="card-tags">{tags.join("  ·  ")}</span>
+          <span class="card-title">{p.title}</span>
+          <span class="card-line">{p.oneLine}</span>
+          <span class="card-cue">Read case study →</span>
+        </a>
+      ) : (
+        <div class="card grid is-static">
+          <span class="card-tags">{tags.join("  ·  ")}</span>
+          <span class="card-title">{p.title}</span>
+          <span class="card-line">{p.oneLine}</span>
+        </div>
+      )}
+    </Fragment>
+  ) : (
+    <article class="card panel">
+      <div class="panel-head">
+        <h3 class="card-title">{p.title}</h3>
+        <p class="panel-meta">
+          {p.role} · {p.dates}
+        </p>
+      </div>
+      {p.panelSummary?.length > 0 && (
+        <ul class="panel-points">
+          {p.panelSummary.map((pt: string) => (
+            <li>{pt}</li>
+          ))}
+        </ul>
+      )}
+      {p.metrics?.length > 0 && (
+        <div class="panel-stats">
+          {p.metrics.slice(0, 3).map((m: any) => (
+            <Stat value={m.value} label={m.label} />
+          ))}
+        </div>
+      )}
+      {p.caseStudy && (
+        <a class="panel-link" href={`/case-studies/${slug}`}>
+          Go deeper on this one →
+        </a>
+      )}
+    </article>
+  )
+}
+
+<style>
+  .card-title {
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .card-tags {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+  }
+
+  /* grid variant */
+  .card.grid {
+    display: grid;
+    gap: var(--s-2);
+    align-content: start;
+    padding: var(--s-5);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    min-height: 168px;
+    transition:
+      transform 0.18s var(--ease),
+      border-color 0.18s var(--ease),
+      box-shadow 0.18s var(--ease);
+  }
+  a.card.grid:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+    box-shadow: var(--shadow-lift);
+  }
+  .card.grid .card-title {
+    font-size: 1.2rem;
+    margin-top: 2px;
+  }
+  .card-line {
+    color: var(--ink-soft);
+    font-size: var(--t-small);
+    line-height: 1.4;
+  }
+  .card-cue {
+    margin-top: auto;
+    padding-top: var(--s-3);
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.04em;
+    color: var(--accent-ink);
+  }
+  .card.is-static {
+    opacity: 0.92;
+  }
+
+  /* panel variant */
+  .card.panel {
+    display: grid;
+    gap: var(--s-4);
+    padding: var(--s-6);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .panel-head .card-title {
+    font-size: var(--t-h3);
+  }
+  .panel-meta {
+    margin-top: 4px;
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.03em;
+    color: var(--ink-faint);
+  }
+  .panel-points {
+    display: grid;
+    gap: var(--s-2);
+  }
+  .panel-points li {
+    position: relative;
+    padding-left: var(--s-5);
+    color: var(--ink-soft);
+    font-size: var(--t-small);
+    line-height: 1.5;
+  }
+  .panel-points li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 0.62em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 60%, var(--line));
+  }
+  .panel-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-6);
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--line);
+  }
+  .panel-link {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    border-bottom: 1px solid transparent;
+    justify-self: start;
+    padding-bottom: 2px;
+    transition: border-color 0.15s var(--ease);
+  }
+  .panel-link:hover {
+    border-color: var(--accent-ink);
+  }
+</style>

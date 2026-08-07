@@ -1,0 +1,46 @@
+---
+import Base from "../layouts/Base.astro";
+import DeckChrome from "../components/DeckChrome.astro";
+import ParallaxScript from "../components/ParallaxScript.astro";
+import ProjectSlides from "../components/ProjectSlides.astro";
+import ProjectSection from "../components/ProjectSection.astro";
+import { getCollection } from "astro:content";
+import { slides as aboutMeSlides } from "../data/slides/about-me";
+import { slides as vepSlides } from "../data/slides/about-vep";
+import "../styles/deck.css";
+
+// the panel runs as one deck: who I am, then what VEP is
+const panelSlides = [...aboutMeSlides, ...vepSlides];
+
+// then the selected work, same set + order as the overview
+const projects = await getCollection("projects");
+const workSlugs = ["salesforce-to-iep", "concierge", "human-intervention-agent", "ai-native"];
+const workProjects = workSlugs
+  .map((s) => projects.find((x) => x.id === s))
+  .filter((x): x is NonNullable<typeof x> => Boolean(x));
+---
+
+<Base
+  header={false}
+  title="Panel Presentation"
+  description="What the Virtual Expert Platform is, and why designing for it is unusual."
+  bodyClass="is-deck"
+>
+  <DeckChrome current="panel" />
+  <div class="deck-frame" aria-hidden="true"></div>
+
+  <ProjectSlides slides={panelSlides} counter={false} />
+
+  <!-- SELECTED WORK ------------------------------------------------------- -->
+  <section class="scene scene--full snap on-navy act-divider" aria-labelledby="pn-work">
+    <div class="scene-inner">
+      <p class="eyebrow" data-reveal>Selected work</p>
+      <h2 id="pn-work" class="act-title" data-reveal style="--reveal-delay:80ms">The work.</h2>
+      <p class="act-lede" data-reveal style="--reveal-delay:180ms">A few projects, each as the goal, my impact, and the numbers. Open any one for the full case study.</p>
+    </div>
+  </section>
+
+  {workProjects.map((proj) => <ProjectSection entry={proj} as="h2" />)}
+
+  <ParallaxScript />
+</Base>

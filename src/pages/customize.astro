@@ -1,0 +1,271 @@
+---
+import Base from "../layouts/Base.astro";
+import { personas } from "../data/personas";
+---
+
+<Base
+  mode="customize"
+  theme="dark"
+  title="Customize"
+  description="Build a tailored version of the presentation live, from approved building blocks."
+>
+  <section class="container cz">
+    <p class="eyebrow accent">Live · built on the call</p>
+    <h1 class="cz-title">Let's build your version</h1>
+    <p class="cz-lede">
+      Drop in the company, the role, and the job description. I assemble a tailored
+      run of the panel on the spot, branded to you, from work I have already written
+      and vetted. You watch it come together.
+    </p>
+
+    <!-- input panel -->
+    <div class="builder">
+      <div class="field-grid">
+        <label class="field">
+          <span class="field-label">Company</span>
+          <input type="text" placeholder="Where are we interviewing?" />
+          <span class="field-hint">Logo pulls from the job link, with manual upload as backup.</span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Role</span>
+          <input type="text" placeholder="The title on the posting" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Date</span>
+          <input type="date" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Audience</span>
+          <select>
+            {personas.map((p) => <option value={p.id}>{p.name}</option>)}
+          </select>
+          <span class="field-hint">Sets the starting altitude and emphasis.</span>
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field-label">Job description link</span>
+        <input type="url" placeholder="Greenhouse, Lever, Ashby, or a plain careers page" />
+        <span class="field-hint">
+          Public links work when the text is in the page. Workday and LinkedIn often
+          need a paste instead.
+        </span>
+      </label>
+
+      <label class="field">
+        <span class="field-label">Or paste the job description</span>
+        <textarea rows="5" placeholder="Paste the full posting here. This always works."></textarea>
+      </label>
+
+      <button class="build-btn" id="buildBtn" type="button">Build presentation →</button>
+    </div>
+
+    <!-- what happens / demo log -->
+    <div class="explain">
+      <div class="explain-head">
+        <h2 class="explain-title">What happens when you hit build</h2>
+        <span class="badge">Demo · live generation wires up next</span>
+      </div>
+      <p class="explain-body">
+        The job description gets read and classified. Then projects are selected and
+        ranked, the copy variant is chosen, and the panel is branded to the company.
+        Here is a sample run.
+      </p>
+
+      <pre class="log" id="log"><code>&gt; reading job description ............ ok
+&gt; company: Example Co ................ matched
+&gt; role: Staff Product Designer ....... ic / senior track
+&gt; signal: platform + systems ......... high
+&gt; signal: ai-native .................. high
+&gt; signal: zero-to-one ................ medium
+&gt; selecting from approved project set
+  · salesforce-to-iep .............. include  (rank 1)
+  · concierge ...................... include  (rank 2)
+  · salesforce-design-principles ... include  (rank 3)
+  · ai-strategy .................... include  (rank 4)
+&gt; copy variant ...................... panel / systems emphasis
+&gt; claims + metrics .................. locked, no free text
+&gt; build ready ....................... 0.8s</code></pre>
+
+      <p class="safety">
+        Every line is the AI selecting and ranking from work I have already written
+        and approved. It never writes a claim or a number on its own. Nothing to
+        hallucinate in front of you.
+      </p>
+    </div>
+  </section>
+</Base>
+
+<script>
+  // Re-stage the demo log line by line so it feels live. Content is already in
+  // the DOM, so it stays readable with JavaScript off.
+  const btn = document.getElementById("buildBtn");
+  const log = document.getElementById("log");
+  if (btn && log) {
+    const original = log.innerHTML;
+    btn.addEventListener("click", () => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      log.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+      if (reduce) return;
+      const lines = original.split("\n");
+      log.innerHTML = "";
+      lines.forEach((line, i) => {
+        setTimeout(() => {
+          log.innerHTML += (i ? "\n" : "") + line;
+        }, i * 110);
+      });
+    });
+  }
+</script>
+
+<style>
+  .cz {
+    padding-block: var(--s-10) var(--s-12);
+    max-width: 52rem;
+  }
+  .cz-title {
+    font-size: var(--t-h1);
+    margin-top: var(--s-4);
+  }
+  .cz-lede {
+    margin-top: var(--s-5);
+    max-width: 52ch;
+    color: var(--ink-soft);
+    font-size: 1.125rem;
+    line-height: 1.55;
+  }
+
+  .builder {
+    margin-top: var(--s-8);
+    display: grid;
+    gap: var(--s-5);
+    padding: var(--s-6);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: var(--s-5);
+  }
+  .field {
+    display: grid;
+    gap: var(--s-2);
+  }
+  .field-label {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--t-small);
+  }
+  .field textarea {
+    resize: vertical;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .field input::placeholder,
+  .field textarea::placeholder {
+    color: var(--ink-faint);
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: transparent;
+  }
+  .field-hint {
+    font-size: var(--t-label);
+    color: var(--ink-faint);
+    line-height: 1.4;
+  }
+
+  .build-btn {
+    justify-self: start;
+    margin-top: var(--s-2);
+    padding: 0.8rem 1.4rem;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: var(--radius-s);
+    font-weight: 600;
+    font-size: var(--t-small);
+    transition: transform 0.15s var(--ease), filter 0.15s var(--ease);
+  }
+  .build-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+  }
+
+  .explain {
+    margin-top: var(--s-10);
+  }
+  .explain-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-4);
+    margin-bottom: var(--s-3);
+  }
+  .explain-title {
+    font-size: var(--t-h3);
+  }
+  .badge {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.04em;
+    color: var(--accent-ink);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+    border-radius: 999px;
+    padding: 3px 10px;
+  }
+  .explain-body {
+    color: var(--ink-soft);
+    max-width: 56ch;
+    line-height: 1.55;
+  }
+
+  .log {
+    margin-top: var(--s-5);
+    padding: var(--s-5);
+    background: #090c12;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    min-height: 18rem;
+  }
+  .log code {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #aeb9ca;
+    white-space: pre;
+  }
+  .safety {
+    margin-top: var(--s-5);
+    padding-left: var(--s-4);
+    border-left: 2px solid var(--accent);
+    color: var(--ink);
+    font-size: var(--t-small);
+    line-height: 1.55;
+    max-width: 56ch;
+  }
+</style>

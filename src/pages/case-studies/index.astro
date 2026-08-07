@@ -1,0 +1,193 @@
+---
+import Base from "../../layouts/Base.astro";
+import ProjectSlides from "../../components/ProjectSlides.astro";
+import ParallaxScript from "../../components/ParallaxScript.astro";
+import { getCollection } from "astro:content";
+import { slides as kitSlides } from "../../data/slides/kit";
+
+const all = (await getCollection("projects")).sort(
+  (a, b) => a.data.order - b.data.order
+);
+const studies = all.filter((p) => p.data.caseStudy);
+
+// per-study thumbnail: the project's cover laptop over a distinct backdrop
+// each backdrop radiates from its main color in the center out to a shade
+// darker at the edges
+const thumbs: Record<string, { img: string; bg: string }> = {
+  "salesforce-to-iep": {
+    img: "00_iep-laptop.png",
+    bg: "radial-gradient(115% 115% at 50% 42%, #2f6bff 0%, #163f9e 100%)", // IEP blue
+  },
+  concierge: {
+    img: "00_concierge-laptop.png",
+    bg: "radial-gradient(115% 115% at 50% 42%, #ff808c 0%, #d1515f 100%)", // watermelon
+  },
+  "ai-native": {
+    img: "00_iep-laptop.png",
+    bg: "radial-gradient(115% 115% at 50% 42%, #6a5cff 0%, #3d2bb0 100%)", // Intuit blue / purple
+  },
+  "human-intervention-agent": {
+    img: "00_agentic-iep-laptop.png",
+    bg: "radial-gradient(115% 115% at 50% 42%, #14b8a6 0%, #0a7568 100%)", // agentic teal
+  },
+};
+const tagsOf = (p: any) =>
+  [...p.data.domain].slice(0, 3).map((t: string) => t.replace(/-/g, " ")).join("  ·  ");
+---
+
+<Base
+  mode="case-studies"
+  title="Case Studies"
+  description="Full walk-throughs: context, problem, process, the calls, the tradeoffs, the results."
+>
+  <section class="container hd">
+    <p class="eyebrow">Case Studies</p>
+    <h1 class="hd-title">The full stories</h1>
+    <p class="hd-lede">
+      Each one covers the context, the problem, how I worked it, the calls I made
+      and the tradeoffs, and what actually happened. Best for a 1:1 where we can
+      slow down and get into it.
+    </p>
+  </section>
+
+  <section class="container block">
+    <div class="study-grid">
+      {studies.map((p) => {
+        const t = thumbs[p.id];
+        return (
+          <a class="study-tile" href={`/case-studies/${p.id}`}>
+            <div class="study-shot" style={t ? `background:${t.bg}` : undefined}>
+              {t && <img src={`/img/projects/${p.id}/${t.img}`} alt="" loading="lazy" />}
+            </div>
+            <div class="study-body">
+              <span class="study-tags">{tagsOf(p)}</span>
+              <span class="study-title">{p.data.title}</span>
+              <span class="study-line">{p.data.oneLine}</span>
+              <span class="study-cue">Read case study →</span>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  </section>
+
+  <section class="container block">
+    <div class="more-head">
+      <h2 class="more-title">Also in the kit</h2>
+      <p class="more-note">
+        The through-line behind the case studies: how I drive strategy, scale
+        design, and build the culture that keeps both going.
+      </p>
+    </div>
+  </section>
+
+  <ProjectSlides slides={kitSlides} title="Also in the kit · Speaker notes" />
+
+  <ParallaxScript />
+</Base>
+
+<style>
+  .hd {
+    padding-block: var(--s-10) var(--s-4);
+  }
+  .hd-title {
+    font-size: var(--t-h1);
+    margin-top: var(--s-4);
+  }
+  .hd-lede {
+    margin-top: var(--s-5);
+    color: var(--ink-soft);
+    font-size: 1.125rem;
+    line-height: 1.55;
+  }
+  .block {
+    margin-top: var(--s-8);
+  }
+
+  /* 2x2 case-study tiles with a thumbnail per study */
+  .study-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(var(--s-4), 2.5vw, var(--s-6));
+  }
+  .study-tile {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: clip;
+    transition:
+      transform 0.18s var(--ease),
+      border-color 0.18s var(--ease),
+      box-shadow 0.18s var(--ease);
+  }
+  .study-tile:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+    box-shadow: var(--shadow-lift);
+  }
+  .study-shot {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    display: grid;
+    place-items: center;
+    overflow: clip;
+    background: var(--line-soft);
+  }
+  .study-shot img {
+    width: 82%;
+    height: 82%;
+    object-fit: contain;
+    filter: drop-shadow(0 18px 30px rgba(8, 12, 20, 0.35));
+    transition: transform 0.25s var(--ease);
+  }
+  .study-tile:hover .study-shot img {
+    transform: translateY(-2px) scale(1.02);
+  }
+  .study-body {
+    display: grid;
+    align-content: start;
+    gap: var(--s-2);
+    padding: clamp(var(--s-4), 2vw, var(--s-5));
+  }
+  .study-tags {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+  }
+  .study-title {
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    font-size: 1.2rem;
+    margin-top: 2px;
+  }
+  .study-line {
+    color: var(--ink-soft);
+    font-size: var(--t-small);
+    line-height: 1.4;
+  }
+  .study-cue {
+    margin-top: var(--s-3);
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.04em;
+    color: var(--accent-ink);
+  }
+  @media (max-width: 40rem) {
+    .study-grid { grid-template-columns: 1fr; }
+  }
+  .more-head {
+    margin-top: var(--s-8);
+    margin-bottom: var(--s-6);
+  }
+  .more-title {
+    font-size: var(--t-h2);
+  }
+  .more-note {
+    margin-top: var(--s-2);
+    color: var(--ink-soft);
+  }
+</style>

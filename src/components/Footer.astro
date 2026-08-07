@@ -1,0 +1,99 @@
+---
+import { site } from "../data/site";
+
+interface Props {
+  /** optional "Next" destination (e.g. the next case study) */
+  next?: { title: string; href: string };
+}
+const { next } = Astro.props;
+---
+
+<footer class="ftr">
+  {next && (
+    <div class="container">
+      <a class="ftr-next" href={next.href}>
+        <span class="ftr-next-label">Next</span>
+        <span class="ftr-next-name">{next.title} <span class="ftr-next-arrow" aria-hidden="true">→</span></span>
+      </a>
+    </div>
+  )}
+  <div class="container ftr-row">
+    <div>
+      <p class="ftr-name">{site.name}</p>
+      <p class="ftr-sub">{site.title} · {site.location}</p>
+    </div>
+    <nav class="ftr-links" aria-label="Contact">
+      <a href={site.links.site}>jaredgase.com</a>
+      <a href={`mailto:${site.links.email}`}>Email</a>
+      <a href={site.links.linkedin}>LinkedIn</a>
+      <a href={site.links.resume} target="_blank" rel="noopener">Resume</a>
+    </nav>
+  </div>
+</footer>
+
+<style>
+  .ftr {
+    border-top: 1px solid var(--line);
+    margin-top: var(--s-16);
+    padding-block: var(--s-8) var(--s-6);
+  }
+  .ftr-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--s-5);
+  }
+  .ftr-name {
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .ftr-sub {
+    color: var(--ink-soft);
+    font-size: var(--t-small);
+  }
+  .ftr-links {
+    display: flex;
+    gap: var(--s-5);
+    font-size: var(--t-small);
+  }
+  .ftr-links a {
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 2px;
+    transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
+  }
+  .ftr-links a:hover {
+    color: var(--accent-ink);
+    border-color: var(--accent-ink);
+  }
+  /* next case study strip */
+  .ftr-next {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3) var(--s-5);
+    padding-bottom: var(--s-6);
+    margin-bottom: var(--s-6);
+    border-bottom: 1px solid var(--line);
+  }
+  .ftr-next-label {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .ftr-next-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.2rem, 1rem + 1vw, 1.7rem);
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    transition: color 0.15s var(--ease);
+  }
+  .ftr-next-arrow { display: inline-block; transition: transform 0.18s var(--ease); }
+  .ftr-next:hover .ftr-next-name { color: var(--accent-ink); }
+  .ftr-next:hover .ftr-next-arrow { transform: translateX(4px); }
+</style>

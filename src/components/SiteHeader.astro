@@ -1,0 +1,89 @@
+---
+import { modes } from "../data/site";
+interface Props {
+  mode?: string;
+}
+const { mode } = Astro.props;
+const current = modes.find((m) => m.slug === mode);
+---
+
+<header class="hdr">
+  <div class="container hdr-row">
+    <a href="/" class="wordmark" aria-label="Jared Gase, back to start">
+      Jared&nbsp;Gase
+    </a>
+    {
+      current && (
+        <nav class="hdr-meta" aria-label="Current view">
+          <span class="dot" aria-hidden="true" />
+          <span class="eyebrow">{current.depthLabel}</span>
+          <span class="hdr-sep" aria-hidden="true">/</span>
+          <span class="hdr-mode">{current.name}</span>
+          <a href="/" class="hdr-back">All&nbsp;views</a>
+        </nav>
+      )
+    }
+  </div>
+</header>
+
+<style>
+  .hdr {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--paper) 82%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .hdr-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    min-height: 60px;
+  }
+  .wordmark {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: 1.0625rem;
+  }
+  .hdr-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .hdr-sep {
+    color: var(--ink-faint);
+  }
+  .hdr-mode {
+    font-size: var(--t-small);
+    font-weight: 550;
+  }
+  .hdr-back {
+    margin-left: var(--s-3);
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+    transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
+  }
+  .hdr-back:hover {
+    color: var(--accent-ink);
+    border-color: var(--accent-ink);
+  }
+  @media (max-width: 38rem) {
+    .hdr-mode,
+    .hdr-sep {
+      display: none;
+    }
+  }
+</style>

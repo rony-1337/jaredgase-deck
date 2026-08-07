@@ -1,0 +1,320 @@
+---
+// One case study as a 3-panel horizontal-scroll group (same mechanic as My
+// Journey): scrolling down pins the section and slides the panels left to right.
+//  1. Summary        — thumbnail + title + summary (+ read/back link)
+//  2. What I delivered — four icon / title / blurb highlight columns
+//  3. My impact      — the numbers, or an impact paragraph fallback
+// Shared by the Overview (per project, h2) and each case-study page (h1).
+import type { CollectionEntry } from "astro:content";
+import type { DeckCover } from "../data/slides";
+
+interface Props {
+  entry: CollectionEntry<"projects">;
+  as?: "h1" | "h2";
+  back?: boolean;   // show the "All case studies" link (case-study page only)
+  /** deck-style cover treatment for the Summary panel (case-study page) */
+  cover?: DeckCover;
+}
+const { entry, as = "h2", back = false, cover } = Astro.props;
+const p = entry.data;
+const Heading = as;
+
+// meta table rows on the cover, straight from frontmatter
+const coverMeta = [
+  ["Org", p.org],
+  ["Role", p.role],
+  ["Length", p.dates],
+  ["Sector", p.sector],
+  ["Platform", p.platform],
+].filter(([, v]) => Boolean(v)) as [string, string][];
+
+const thumbMap: Record<string, string> = {
+  "salesforce-to-iep": "/img/projects/salesforce-to-iep/00_iep-laptop.png",
+  "concierge": "/img/projects/concierge/00_concierge-laptop.png",
+  "human-intervention-agent": "/img/projects/human-intervention-agent/00_agentic-iep-laptop.png",
+  "ai-native": "/img/projects/ai-native/00_iep-laptop.png",
+};
+// thumbs that are product-on-laptop pieces, cropped in code like the cover
+const thumbCrop = new Set(["salesforce-to-iep", "ai-native", "concierge", "human-intervention-agent"]);
+const thumb = thumbMap[entry.id];
+const hasMetrics = p.metrics.length > 0;
+const hasHighlights = p.highlights.length > 0;
+const summary = p.summary ?? p.overviewBlurb;
+const iconBase = "/img/projects/icons/";
+---
+
+<section
+  class:list={["journey-h", "proj-h", cover && "snap"]}
+  data-hscroll
+  style={`--panels:${cover ? 1 : 3}`}
+  aria-label={`${p.title}, case study`}
+>
+  <div class="journey-h-vp">
+    <div class="journey-h-track" data-hscroll-track>
+
+      <!-- 1 · summary: deck-style cover when provided, else thumb + summary -->
+      {cover ? (
+        <article class={`journey-panel cover-panel cover-panel--${entry.id}`}>
+          <!-- full-height gray band on the right, laptop riding on it and
+               bleeding off the panel edge (clipped by the band) -->
+          <div class="cover-band">
+            <figure class="cover-shot">
+              <div data-reveal data-from="right" style="--reveal-delay:120ms">
+                <div data-parallax data-speed-x="-14" data-speed-y="0">
+                  <img src={cover.laptop} alt={`${p.title} shown in IEP on a laptop`} width="1600" height="1011" />
+                </div>
+              </div>
+            </figure>
+          </div>
+          <div class="cover-copy">
+              {back && <a class="proj-back" href="/case-studies" data-reveal>← All case studies</a>}
+              <p class="cover-logos" data-reveal>
+                <img class="cover-logo-iep" src={cover.logoPrimary} alt="Intuit Expert Portal" width="472" height="94" />
+                <span class="cover-plus" aria-hidden="true">+</span>
+                <img class={`cover-logo-tt ${entry.id === "ai-native" ? "cover-logo-sm" : ""} ${entry.id === "concierge" ? "cover-logo-lg" : ""}`} src={cover.logoSecondary} alt="Secondary brand" width="322" height="60" />
+              </p>
+              <Heading class="proj-title cover-title" data-reveal style="--reveal-delay:80ms">{p.title}</Heading>
+              <p class="cover-tagline" data-reveal style="--reveal-delay:160ms">{cover.tagline}</p>
+              <dl class="cover-meta" data-reveal style="--reveal-delay:240ms">
+                {coverMeta.map(([k, v]) => (
+                  <div class="cover-row">
+                    <dt>{k}</dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))}
+              </dl>
+          </div>
+        </article>
+      ) : (
+      <article class="journey-panel">
+        <div class={`journey-grid proj-grid ${thumb ? "" : "proj-grid--nothumb"}`}>
+          {thumb && (
+            <figure class={`proj-shot ${thumbCrop.has(entry.id) ? "proj-shot--laptop" : ""}`} data-reveal data-from="left">
+              <img src={thumb} alt={`${p.title} preview`} width="1000" height="750" loading="lazy" />
+            </figure>
+          )}
+          <div class="proj-copy">
+            {back && <a class="proj-back" href="/case-studies" data-reveal>← All case studies</a>}
+            <p class="eyebrow" data-reveal data-from="right">Summary</p>
+            <Heading class="proj-title" data-reveal data-from="right" style="--reveal-delay:80ms">{p.title}</Heading>
+            <p class="proj-brief" data-reveal data-from="right" style="--reveal-delay:180ms">{summary}</p>
+            {!back && (
+              <a class="proj-link" href={`/case-studies/${entry.id}`} data-reveal data-from="right" style="--reveal-delay:260ms">
+                Read the case study →
+              </a>
+            )}
+          </div>
+        </div>
+      </article>
+      )}
+
+      <!-- panels 2 + 3 only where there is no authored walkthrough (the
+           cover pages fold delivered/impact into their Results slide) -->
+      {!cover && (
+        <article class="journey-panel">
+          <div class="proj-stage">
+            <h2 class="proj-stage-title" data-reveal>What I delivered</h2>
+            {hasHighlights ? (
+              <ul class="proj-highlights">
+                {p.highlights.map((h: any, i: number) => (
+                  <li data-reveal data-from="right" style={`--reveal-delay:${80 + i * 80}ms`}>
+                    <img class="proj-hl-icon" src={`${iconBase}${h.icon}`} alt="" width="56" height="56" loading="lazy" />
+                    <h3 class="proj-hl-title">{h.title}</h3>
+                    <p class="proj-hl-blurb">{h.blurb}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="proj-lead" data-reveal style="--reveal-delay:100ms">{p.deliveredSummary}</p>
+            )}
+          </div>
+        </article>
+      )}
+
+      {!cover && (
+        <article class="journey-panel">
+          <div class="proj-stage">
+            <h2 class="proj-stage-title" data-reveal>My impact</h2>
+            {hasMetrics ? (
+              <ul class="statline proj-stats" data-reveal style={`--cols:${p.metrics.length};--reveal-delay:100ms`}>
+                {p.metrics.map((m: any) => (
+                  <li>
+                    <p class="stat-val">{m.value}</p>
+                    <p class="stat-label">{m.label}</p>
+                    {m.relative && <p class="stat-sub">{m.relative}</p>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="proj-lead" data-reveal style="--reveal-delay:100ms">{p.impact}</p>
+            )}
+          </div>
+        </article>
+      )}
+
+    </div>
+  </div>
+</section>
+
+<style>
+  /* intro panel: thumbnail + copy */
+  .proj-grid {
+    display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: clamp(var(--s-6), 5vw, var(--s-10)); align-items: center;
+  }
+  .proj-grid--nothumb { grid-template-columns: 1fr; max-width: 52rem; }
+  .proj-shot {
+    border-radius: var(--radius); overflow: clip; background: var(--line-soft);
+    box-shadow: var(--shadow-lift); aspect-ratio: 4 / 3; max-height: 60svh;
+  }
+  .proj-shot img { width: 100%; height: 100%; object-fit: cover; }
+  /* laptop-piece thumbs: no card, the laptop floats free at natural aspect */
+  .proj-shot--laptop {
+    background: none; box-shadow: none; border-radius: 0;
+    overflow: visible; padding: 0;
+    aspect-ratio: auto; max-height: none;
+  }
+  .proj-shot--laptop img { object-fit: contain; height: auto; }
+  /* and give it a wider column so it reads large */
+  .proj-grid:has(.proj-shot--laptop) {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  }
+
+  /* deck-style cover (case-study Summary panel), matching the reference:
+     copy on the left; a full-height gray band on the right with the laptop
+     riding it, inset from the band's left and bleeding off the right edge */
+  .cover-panel { position: relative; }
+  .cover-band {
+    position: absolute; top: 0; bottom: 0; right: 0; left: 58%;
+    overflow: clip;
+  }
+  .cover-shot {
+    position: absolute; margin: 0;
+    left: 7%; top: 50%; transform: translateY(-50%);
+    height: 88%;
+  }
+  .cover-shot > div, .cover-shot [data-parallax] { height: 100%; }
+  .cover-shot img {
+    display: block; height: 100%; width: auto; max-width: none;
+  }
+  .cover-copy {
+    position: relative; z-index: 1;
+    width: min(50%, 44rem);
+  }
+  .cover-logos {
+    display: flex; align-items: center; gap: clamp(var(--s-3), 1.5vw, var(--s-5));
+    margin-top: var(--s-2);
+  }
+  .cover-logo-iep { width: auto; height: clamp(26px, 2.6vw, 36px); }
+  .cover-logo-tt { width: auto; height: clamp(22px, 2.2vw, 30px); }
+  .cover-logo-sm { height: clamp(16px, 1.7vw, 23px); }
+  .cover-logo-lg { height: clamp(33px, 3.3vw, 45px); }
+  /* concierge: a touch more room around the + between the two logos */
+  .cover-panel--concierge .cover-logos { gap: clamp(var(--s-3), 1.8vw, var(--s-6)); }
+  .cover-plus { font-size: 1.4rem; font-weight: 300; color: var(--ink-soft); }
+  .cover-title { margin-top: clamp(var(--s-5), 3vh, var(--s-8)); max-width: 20ch; }
+  .cover-tagline {
+    margin-top: var(--s-4);
+    font-size: clamp(1.1rem, 1rem + 0.5vw, 1.35rem);
+    line-height: 1.45; color: var(--ink-soft);
+  }
+  .cover-meta { margin-top: clamp(var(--s-6), 4vh, var(--s-8)); display: grid; }
+  .cover-row {
+    display: grid; grid-template-columns: minmax(6rem, 0.28fr) 1fr;
+    gap: var(--s-5); padding-block: clamp(var(--s-3), 1.4vh, var(--s-4));
+    border-top: 1px solid var(--line);
+  }
+  .cover-row:last-child { border-bottom: 1px solid var(--line); }
+  .cover-row dt { color: var(--ink-faint); font-size: var(--t-small); }
+  .cover-row dd { color: var(--ink); font-size: var(--t-small); line-height: 1.4; }
+  .proj-back {
+    display: inline-block; margin-bottom: var(--s-4);
+    font-family: var(--font-mono); font-size: var(--t-label);
+    letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-soft);
+  }
+  .proj-back:hover { color: var(--accent-ink); }
+  .proj-title {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.8rem, 1rem + 2.8vw, 3rem); line-height: 1.08;
+    letter-spacing: -0.01em; margin-top: var(--s-2); max-width: 18ch;
+  }
+  .proj-brief {
+    margin-top: clamp(var(--s-4), 2.5vh, var(--s-6));
+    font-family: var(--font-sans);
+    font-size: clamp(1.15rem, 1rem + 0.7vw, 1.5rem);
+    line-height: 1.5; color: var(--ink-soft); max-width: 40ch;
+  }
+  .proj-link {
+    display: inline-block; margin-top: var(--s-6);
+    font-family: var(--font-mono); font-size: var(--t-label);
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-ink);
+    border-bottom: 1px solid transparent; padding-bottom: 2px;
+    transition: border-color 0.15s var(--ease);
+  }
+  .proj-link:hover { border-color: var(--accent-ink); }
+
+  /* delivered / impact stage: full-width single column */
+  .proj-stage { width: 100%; max-width: var(--container); margin-inline: auto; }
+  .proj-stage-title {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.6rem, 1rem + 2.2vw, 2.6rem); line-height: 1.1;
+    letter-spacing: -0.01em; color: var(--ink);
+    margin-bottom: clamp(var(--s-4), 2.5vh, var(--s-6));
+  }
+  .proj-lead {
+    font-family: var(--font-display); font-weight: 400;
+    font-size: clamp(1.4rem, 1rem + 1.6vw, 2.2rem);
+    line-height: 1.4; color: var(--ink); text-wrap: balance;
+  }
+
+  /* what I delivered: icon / title / blurb, 2x2 grid */
+  .proj-highlights {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(var(--s-5), 3vw, var(--s-8)) clamp(var(--s-6), 5vw, var(--s-10));
+  }
+  .proj-hl-icon {
+    width: clamp(64px, 6vw, 88px); height: auto; display: block;
+    margin-bottom: clamp(var(--s-3), 1.5vh, var(--s-5));
+  }
+  .proj-hl-title {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.35rem, 1rem + 1vw, 1.8rem); line-height: 1.15;
+    letter-spacing: -0.01em; color: var(--ink);
+  }
+  .proj-hl-blurb {
+    margin-top: var(--s-3); font-size: var(--t-small);
+    line-height: 1.5; color: var(--ink-soft);
+  }
+
+  /* impact numbers: one horizontal statline row, all metrics on one line,
+     regardless of count (3 or 5). Keep the big type; just tighten the gap. */
+  .proj-stats {
+    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+    gap: clamp(var(--s-3), 2vw, var(--s-6));
+  }
+  .proj-stats .stat-label { max-width: none; }
+  .proj-stats .stat-sub {
+    margin-top: 4px; font-size: var(--t-label);
+    color: var(--ink-faint); line-height: 1.4; max-width: none;
+  }
+
+  /* below a tablet width, stop shrinking the row and reflow to a 2-up grid
+     so the numbers stay legible instead of getting squished thinner. */
+  @media (max-width: 60rem) {
+    .proj-grid { grid-template-columns: 1fr; gap: var(--s-6); }
+    .proj-shot { max-height: 40svh; }
+    .proj-highlights { grid-template-columns: 1fr; gap: var(--s-5); }
+    /* small screens: band becomes a normal block under the copy */
+    .cover-copy { width: 100%; }
+    .cover-band { position: static; margin-top: var(--s-6); border-radius: var(--radius); }
+    .cover-shot { position: static; transform: none; height: auto; padding: var(--s-4); }
+    .cover-shot img { width: 100%; height: auto; }
+    .proj-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(var(--s-5), 4vw, var(--s-8)) clamp(var(--s-4), 4vw, var(--s-6));
+    }
+  }
+  @media (max-width: 26rem) {
+    .proj-stats { grid-template-columns: 1fr; }
+  }
+</style>

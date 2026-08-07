@@ -1,0 +1,357 @@
+---
+import Base from "../layouts/Base.astro";
+import DeckChrome from "../components/DeckChrome.astro";
+import ParallaxScript from "../components/ParallaxScript.astro";
+import ProjectSection from "../components/ProjectSection.astro";
+import { pillars } from "../data/pillars";
+
+// one icon per principle, in the same order as the pillars array
+const principleIcons = [
+  "/img/about/principle1_strategy.svg",
+  "/img/about/principle2_systems.svg",
+  "/img/about/principle3_influence.svg",
+  "/img/about/principle4_ai-fluency.svg",
+];
+import { getCollection } from "astro:content";
+import { site } from "../data/site";
+import { bio } from "../data/bio";
+import { featuredQuotes, ratings } from "../data/validation";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import "../styles/deck.css";
+
+// resolve an employer/school logo if the file has been dropped, else null
+const logoFor = (name: string) =>
+  ["svg", "png"].map((e) => `/img/journey/logos/${name}.${e}`)
+    .find((p) => existsSync(join(process.cwd(), "public", p))) ?? null;
+
+const homeSlides = [
+  { fact: bio.home.facts[0], img: "/img/about/about_family.jpg", alt: "Jared with his three boys" },
+  { fact: bio.home.facts[1], img: "/img/about/about_pc-build.jpg", alt: "A custom PC build in progress" },
+  { fact: bio.home.facts[2], img: "/img/about/about_501st.jpg", alt: "Jared volunteering in 501st Legion costume" },
+];
+const workSlides = [
+  { fact: bio.work.facts[0], img: "/img/about/about_creative-studio.jpg", alt: "Creative Studio craft programming" },
+  { fact: bio.work.facts[1], img: "/img/about/about_design-trek.jpg", alt: "SD Design Trek company visit" },
+  { fact: bio.work.facts[2], img: "/img/about/about_speakeasy.jpg", alt: "UX Speakeasy event at Intuit" },
+  { fact: bio.work.facts[3], img: null, alt: null },
+];
+
+// the career arc, from the first design job to today. Each stage carries a
+// real mockup from that era.
+const journey = [
+  { year: "2011", company: "University of Oregon", logo: logoFor("oregon"), scale: 1.25, role: "BS in Digital Art, Minor in Photography", img: "/img/journey/journey_oregon.jpg", note: "Learned to see through a lens and build through code. Where visual thinking became the foundation for everything that came after." },
+  { year: "2011", company: "National Powersport Auctions", logo: logoFor("npa"), scale: 1.10, role: "Web & Digital Designer", img: "/img/journey/journey_npa.png", note: "Where it started. Owned campaigns end to end, from idea to launch. First time wearing every hat and learning how to ship without a safety net." },
+  { year: "2013", company: "BOP Design", logo: logoFor("bop"), scale: 1.15, role: "Web Designer", img: "/img/journey/journey_bop.png", note: "Learned to translate client problems into systems. Brand identities, UI kits, and style guides. Where I started thinking in patterns, not pages." },
+  { year: "2015", company: "L7 Creative", logo: logoFor("l7"), scale: 1.35, role: "Interactive Designer III", img: "/img/journey/journey_l7.png", note: "Where human-centered design clicked. Started mapping journeys instead of just building screens. Learned to zoom out before zooming in." },
+  { year: "2016", company: "National University System", logo: logoFor("nu"), scale: 1.0, role: "Lead UX Designer", img: "/img/journey/journey_nu.png", note: "First time leading design across an entire organization. Learned to use data to earn trust, and trust to drive change across four universities." },
+  { year: "Today", company: "Intuit", logo: logoFor("intuit"), scale: 0.85, role: "Staff Product Designer", img: "/img/journey/journey_intuit.png", note: "Now an AI-native platform thinker, leading design for a 60,000-person expert workforce. Where systems thinking became the work, not just the lens." },
+];
+
+const projects = await getCollection("projects");
+const workSlugs = ["salesforce-to-iep", "concierge", "human-intervention-agent", "ai-native"];
+const workProjects = workSlugs
+  .map((s) => projects.find((x) => x.id === s))
+  .filter((x): x is NonNullable<typeof x> => Boolean(x));
+
+const pad = (n: number) => String(n).padStart(2, "0");
+---
+
+<Base header={false} title="Portfolio Overview" description={site.intro} bodyClass="is-deck">
+  <DeckChrome current="overview" />
+  <div class="deck-frame" aria-hidden="true"></div>
+
+  <!-- WHO (light, so it does not sit next to the navy About divider) ------- -->
+  <section class="scene scene--full snap" aria-labelledby="ov-who">
+    <div class="scene-inner intro-grid">
+      <figure class="intro-photo" data-reveal>
+        <img src="/img/jared.jpg" alt="Jared Gase" width="1000" height="1000" />
+      </figure>
+      <div class="intro-copy">
+        <p class="eyebrow" data-reveal>Portfolio Overview</p>
+        <h1 id="ov-who" class="intro-hi" data-reveal style="--reveal-delay:80ms">{bio.hi}</h1>
+        <p class="intro-sub" data-reveal style="--reveal-delay:180ms">{site.intro}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT DIVIDER: About me ----------------------------------------------- -->
+  <section class="scene scene--full snap on-navy act-divider" aria-labelledby="ov-home-intro">
+    <div class="scene-inner">
+      <p class="eyebrow" data-reveal>About me</p>
+      <h2 id="ov-home-intro" class="act-title" data-reveal style="--reveal-delay:80ms">{bio.home.heading}</h2>
+      <p class="act-lede" data-reveal style="--reveal-delay:180ms">{bio.home.lede}</p>
+    </div>
+  </section>
+
+  {homeSlides.map((s, i) => (
+    <section class="scene scene--full snap statement" aria-label={`At home, point ${i + 1}`}>
+      <div class={`scene-inner statement-grid ${i % 2 === 1 ? "is-right" : ""}`}>
+        <figure class="statement-figure" data-reveal data-from={i % 2 === 1 ? "right" : "left"}>
+          <img src={s.img} alt={s.alt} width="800" height="1000" loading="lazy" />
+        </figure>
+        <div class="statement-text">
+          <p class="eyebrow" data-reveal data-from={i % 2 === 1 ? "left" : "right"}>At home · {pad(i + 1)}</p>
+          <p class="statement-big" data-reveal data-from={i % 2 === 1 ? "left" : "right"} style="--reveal-delay:120ms">{s.fact}</p>
+        </div>
+      </div>
+    </section>
+  ))}
+
+  <!-- ACT DIVIDER: At work ------------------------------------------------ -->
+  <section class="scene scene--full snap on-navy act-divider" aria-labelledby="ov-work-intro">
+    <div class="scene-inner">
+      <p class="eyebrow" data-reveal>At work</p>
+      <h2 id="ov-work-intro" class="act-title" data-reveal style="--reveal-delay:80ms">In the community</h2>
+      <p class="act-lede" data-reveal style="--reveal-delay:180ms">{bio.work.lede}</p>
+    </div>
+  </section>
+
+  {workSlides.map((s, i) => (
+    s.img ? (
+      <section class="scene scene--full snap statement" aria-label={`In the community, point ${i + 1}`}>
+        <div class={`scene-inner statement-grid ${i % 2 === 1 ? "is-right" : ""}`}>
+          <figure class="statement-figure" data-reveal data-from={i % 2 === 1 ? "right" : "left"}>
+            <img src={s.img} alt={s.alt} width="800" height="1000" loading="lazy" />
+          </figure>
+          <div class="statement-text">
+            <p class="eyebrow" data-reveal data-from={i % 2 === 1 ? "left" : "right"}>In the community · {pad(i + 1)}</p>
+            <p class="statement-big" data-reveal data-from={i % 2 === 1 ? "left" : "right"} style="--reveal-delay:120ms">{s.fact}</p>
+          </div>
+        </div>
+      </section>
+    ) : (
+      <section class="scene scene--full snap statement statement--solo" aria-label={`In the community, point ${i + 1}`}>
+        <div class="scene-inner statement-text">
+          <p class="eyebrow" data-reveal>In the community · {pad(i + 1)}</p>
+          <p class="statement-big" data-reveal style="--reveal-delay:120ms">{s.fact}</p>
+        </div>
+      </section>
+    )
+  ))}
+
+  <!-- MY JOURNEY intro (timeline starts on the first stage, not here) ------- -->
+  <section class="scene scene--full snap on-navy act-divider" aria-labelledby="ov-journey-intro">
+    <div class="scene-inner">
+      <h2 id="ov-journey-intro" class="act-title" data-reveal>My Journey</h2>
+      <p class="act-lede" data-reveal style="--reveal-delay:140ms">From the University of Oregon to Intuit, the path that shaped how I think and work.</p>
+    </div>
+  </section>
+
+  <!-- MY JOURNEY: horizontal scroll. Scrolling down pins this section and
+       slides the panels + timeline left to right, across the whole arc. -->
+  <section class="journey-h" data-hscroll style={`--panels:${journey.length}`} aria-label="My journey">
+    <div class="journey-h-vp">
+      <div class="journey-h-track" data-hscroll-track>
+        {journey.map((j, i) => (
+          <article class="journey-panel">
+            <div class="journey-grid">
+              <figure class="journey-shot">
+                {j.img ? (
+                  <img src={j.img} alt={`${j.company} work sample`} loading="lazy" />
+                ) : j.logo ? (
+                  <img class="journey-emblem" src={j.logo} alt={j.company} loading="lazy" />
+                ) : (
+                  <div class="journey-edu"><span>{j.company}</span></div>
+                )}
+              </figure>
+              <div class="journey-text">
+                <p class="eyebrow">My journey · {String(i).padStart(2, "0")}</p>
+                {j.logo ? (
+                  <img class="journey-logo" src={j.logo} alt={j.company} style={`--logo-scale:${j.scale ?? 1}`} />
+                ) : (
+                  <p class="journey-company">{j.company}</p>
+                )}
+                <h2 class="journey-role">{j.role}</h2>
+                <p class="journey-note">{j.note}</p>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <!-- timeline, pinned to the bottom of the horizontal section -->
+      <div class="journey-tl" aria-hidden="true">
+        <div class="journey-tl-inner">
+          <div class="tl-line"><span class="tl-fill"></span></div>
+          <ol class="tl-marks">
+            {journey.map((s) => (
+              <li><span class="tl-dot" /><span class="tl-year">{s.year}</span></li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT DIVIDER: How I think -------------------------------------------- -->
+  <section class="scene scene--full snap on-navy act-divider" aria-labelledby="ov-think-intro">
+    <div class="scene-inner">
+      <p class="eyebrow" data-reveal>How I think</p>
+      <h2 id="ov-think-intro" class="act-title" data-reveal style="--reveal-delay:80ms">A few principles I keep coming back to.</h2>
+      <p class="act-lede" data-reveal style="--reveal-delay:180ms">The throughlines behind how I approach the work, from strategy and systems to influence and AI.</p>
+    </div>
+  </section>
+
+  <!-- HOW I THINK: horizontal scroll, one principle per panel -------------- -->
+  <section class="journey-h think-h" data-hscroll style={`--panels:${pillars.length}`} aria-label="How I think">
+    <div class="journey-h-vp">
+      <div class="journey-h-track" data-hscroll-track>
+        {pillars.map((p, i) => (
+          <article class="journey-panel">
+            <div class="think-stage">
+              <img class="think-icon" src={principleIcons[i]} alt="" width="112" height="112" data-reveal data-from="right" />
+              <div class="think-text">
+                <p class="eyebrow" data-reveal data-from="right" style="--reveal-delay:80ms">How I think · {pad(i + 1)} · {p.label}</p>
+                <h2 class="think-title" data-reveal data-from="right" style="--reveal-delay:160ms">{p.title}</h2>
+                <p class="think-body" data-reveal data-from="right" style="--reveal-delay:240ms">{p.body}</p>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- LATEST PERFORMANCE (data) ------------------------------------------- -->
+  <section class="scene scene--full snap" aria-labelledby="ov-perf">
+    <div class="scene-inner">
+      <header class="scene-head">
+        <p class="eyebrow" data-reveal>Latest performance</p>
+        <h2 id="ov-perf" class="scene-title" data-reveal style="--reveal-delay:80ms">Quantitative validation of impact.</h2>
+      </header>
+      <ul class="statline perf-stats">
+        {ratings.stats.map((s: any, i: number) => (
+          <li data-reveal style={`--reveal-delay:${120 + i * 90}ms`}>
+            <p class="stat-val">{s.value}{s.suffix && <span class="stat-suffix">{s.suffix}</span>}</p>
+            <p class="stat-label">{s.label}</p>
+          </li>
+        ))}
+      </ul>
+      <p class="statline-src" data-reveal style="--reveal-delay:520ms">{ratings.source}</p>
+    </div>
+  </section>
+
+  <!-- QUOTES: horizontal scroll, one per panel ---------------------------- -->
+  <section class="journey-h quote-h" data-hscroll style={`--panels:${featuredQuotes.length}`} aria-label="What people say">
+    <div class="journey-h-vp">
+      <div class="journey-h-track" data-hscroll-track>
+        {featuredQuotes.map((q, i) => (
+          <article class="journey-panel">
+            <div class="quote-stage">
+              <img class="quote-icon" src="/img/projects/icons/quote.svg" alt="" width="72" height="72" data-reveal data-from="right" />
+              <p class="eyebrow quote-count" data-reveal data-from="right" style="--reveal-delay:60ms">{pad(i + 1)} / {pad(featuredQuotes.length)}</p>
+              <blockquote class="quote-big" data-reveal data-from="right" style="--reveal-delay:120ms">{q.text}</blockquote>
+              <p class="quote-attr" data-reveal data-from="right" style="--reveal-delay:240ms">
+                <span class="q-name">{q.name}</span>
+                <span class="q-role">{q.role}</span>
+              </p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT DIVIDER: Selected work ------------------------------------------ -->
+  <section class="scene scene--full snap on-navy act-divider" aria-labelledby="ov-work-sec">
+    <div class="scene-inner">
+      <p class="eyebrow" data-reveal>Selected work</p>
+      <h2 id="ov-work-sec" class="act-title" data-reveal style="--reveal-delay:80ms">The work.</h2>
+      <p class="act-lede" data-reveal style="--reveal-delay:180ms">A few projects, each as the goal, my impact, and the numbers. Open any one for the full case study.</p>
+    </div>
+  </section>
+
+  {workProjects.map((proj) => <ProjectSection entry={proj} as="h2" />)}
+
+  <!-- GO DEEPER ------------------------------------------------------------ -->
+  <section class="scene scene--full snap deeper" aria-labelledby="ov-deeper">
+    <div class="scene-inner">
+      <div class="deeper-box" data-reveal>
+        <h2 id="ov-deeper" class="deeper-q">Want more than the overview?</h2>
+        <div class="deeper-links">
+          <a href="/panel">See the panel presentation →</a>
+          <a href="/case-studies">Read the full case studies →</a>
+          {/* Customize disabled for now:
+          <a href="/customize">Build a version for your team →</a>
+          */}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <ParallaxScript />
+</Base>
+
+<style>
+  /* how I think: one principle per horizontal panel */
+  .think-stage {
+    width: 100%; max-width: var(--container); margin-inline: auto;
+    display: flex; align-items: center; gap: clamp(var(--s-5), 4vw, var(--s-10));
+  }
+  .think-icon { flex: none; width: clamp(128px, 18vw, 256px); height: auto; }
+  .think-text { min-width: 0; }
+  @media (max-width: 48rem) {
+    .think-stage { flex-direction: column; align-items: flex-start; gap: var(--s-4); }
+  }
+  .think-title {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(2rem, 1rem + 4vw, 3.4rem); line-height: 1.08;
+    letter-spacing: -0.02em; color: var(--ink); margin-top: var(--s-4);
+    text-wrap: balance;
+  }
+  .think-body {
+    margin-top: clamp(var(--s-5), 3vh, var(--s-8));
+    font-size: clamp(1.15rem, 1rem + 0.8vw, 1.6rem);
+    line-height: 1.5; color: var(--ink-soft); max-width: none;
+  }
+
+  /* latest performance: keep every value and label on a single line on wide
+     screens; reflow to a 2x2 grid on smaller ones instead of squishing. */
+  .perf-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .perf-stats .stat-val { white-space: nowrap; }
+  .perf-stats .stat-label { max-width: none; white-space: nowrap; }
+  @media (max-width: 60rem) {
+    .perf-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(var(--s-6), 5vw, var(--s-8)) var(--s-5);
+    }
+    .perf-stats .stat-label { white-space: normal; }
+  }
+  @media (max-width: 26rem) {
+    .perf-stats { grid-template-columns: 1fr; }
+  }
+
+  /* quotes: one per horizontal panel, quote runs the full width */
+  .quote-h .quote-stage { width: 100%; max-width: var(--container); margin-inline: auto; }
+  .quote-h .quote-big { max-width: none; }
+  .quote-icon {
+    width: clamp(48px, 5vw, 72px); height: auto; display: block;
+    margin-bottom: clamp(var(--s-3), 2vh, var(--s-5));
+  }
+  .quote-count { margin-bottom: var(--s-3); }
+
+  .deeper-box {
+    max-width: none;
+    padding: clamp(var(--s-6), 5vw, var(--s-10));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .deeper-q { font-size: clamp(1.6rem, 1rem + 2.4vw, 2.4rem); }
+  .deeper-links {
+    margin-top: var(--s-6);
+    display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-8);
+  }
+  @media (min-width: 48rem) { .deeper-links { flex-wrap: nowrap; } }
+  .deeper-links a {
+    font-family: var(--font-mono);
+    font-size: var(--t-small);
+    color: var(--accent-ink);
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+    transition: border-color 0.15s var(--ease);
+  }
+  .deeper-links a:hover { border-color: var(--accent-ink); }
+</style>

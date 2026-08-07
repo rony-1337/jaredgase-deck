@@ -1,0 +1,77 @@
+---
+// Renders one full-screen slide per numbered asset in a project's folder
+// (public/img/projects/<slug>/). Reads the folder at build time, orders by the
+// numeric filename prefix, and captions from the filename. Images, GIFs, and
+// videos are all supported. 00_* thumbnails and non-numbered helper files
+// (icons) are skipped.
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+
+interface Props { slug: string; }
+const { slug } = Astro.props;
+
+let files: string[] = [];
+try {
+  files = readdirSync(join(process.cwd(), "public/img/projects", slug));
+} catch (e) {
+  files = [];
+}
+
+const MEDIA = /\.(png|jpe?g|gif|webp|mp4|webm|mov)$/i;
+const assets = files
+  .filter((f) => /^\d/.test(f) && !/^00[_-]/.test(f) && MEDIA.test(f))
+  .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+  .map((f) => {
+    const base = f.replace(/\.[^.]+$/, "");
+    const num = (base.match(/^\d+[a-z]?/i) || [""])[0];
+    const label = base
+      .replace(/^\d+[a-z]?[_\-\s]+/i, "")
+      .replace(/[_\-]+/g, " ")
+      .trim();
+    const isVideo = /\.(mp4|webm|mov)$/i.test(f);
+    return { url: `/img/projects/${slug}/${encodeURIComponent(f)}`, num, label, isVideo };
+  });
+---
+
+{assets.map((a, i) => (
+  <section class="scene scene--full snap dd" aria-label={`Deep dive, ${a.label}`}>
+    <div class={`scene-inner dd-grid ${i % 2 === 1 ? "is-right" : ""}`}>
+      <figure class="dd-figure" data-reveal data-from={i % 2 === 1 ? "right" : "left"}>
+        {a.isVideo ? (
+          <video src={a.url} autoplay muted loop playsinline preload="metadata" />
+        ) : (
+          <img src={a.url} alt={a.label} loading="lazy" />
+        )}
+      </figure>
+      <div class="dd-text">
+        <p class="eyebrow" data-reveal data-from={i % 2 === 1 ? "left" : "right"}>Deep dive · {a.num}</p>
+        <p class="dd-caption" data-reveal data-from={i % 2 === 1 ? "left" : "right"} style="--reveal-delay:100ms">{a.label}</p>
+      </div>
+    </div>
+  </section>
+))}
+
+<style>
+  .dd-grid {
+    display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: clamp(var(--s-6), 5vw, var(--s-10)); align-items: center;
+  }
+  .dd-grid.is-right { direction: rtl; }
+  .dd-grid.is-right > * { direction: ltr; }
+  .dd-figure { justify-self: center; width: 100%; }
+  .dd-figure img,
+  .dd-figure video {
+    display: block; width: 100%; height: auto; max-height: 80svh;
+    object-fit: contain;
+  }
+  .dd-caption {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.4rem, 1rem + 1.6vw, 2.1rem); line-height: 1.15;
+    letter-spacing: -0.01em; margin-top: var(--s-3); max-width: 18ch;
+  }
+  @media (max-width: 60rem) {
+    .dd-grid { grid-template-columns: 1fr; gap: var(--s-5); }
+    .dd-grid.is-right { direction: ltr; }
+    .dd-figure img, .dd-figure video { max-height: 52svh; }
+  }
+</style>

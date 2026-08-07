@@ -1,0 +1,2581 @@
+---
+// Code-built slide figures: layered pieces positioned and animated in code
+// instead of a flat exported image. Each piece nests three layers so the
+// effects never fight over one transform:
+//   [data-reveal] wrapper  -> staggered entrance
+//   [data-parallax] wrapper -> scroll drift (driven by ParallaxScript)
+//   .float img              -> gentle idle bob (CSS keyframes)
+// Compositions are authored per project; this set belongs to salesforce-to-iep.
+
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+
+interface Props {
+  name: string;
+}
+const { name } = Astro.props;
+const base = "/img/projects/salesforce-to-iep";
+const aiBase = "/img/projects/ai-native";
+const cBase = "/img/projects/concierge";
+const jdBase = "/img/about-jd";
+const hiaBase = "/img/projects/human-intervention-agent";
+const vepBase = "/img/about-work/01_intuits-platform";
+const pmBase = "/img/about-work/03_platform-mindset";
+
+// concierge slide 4 (flowdeck): every node of 04_e2e-concierge-flow.svg as a
+// card. l/t/w/h are % of the diagram's 6288x2327 viewBox; dx/dy are the offset
+// (in container-width / container-height %) back to a shared stack anchor so
+// the cards start piled and fan out to their real positions in reading order.
+// r is a small pile-jitter rotation. k: r=round, b=box, d=diamond.
+const flowNodes = [
+  {l:3.37,t:13.94,w:4.71,h:12.72,k:"r",dx:2.63,dy:12.06,r:-8.8},
+  {l:10.81,t:15.99,w:3.18,h:8.59,k:"b",dx:-4.81,dy:10.01,r:-6.6},
+  {l:17.17,t:15.96,w:3.20,h:8.65,k:"d",dx:-11.17,dy:10.04,r:-4.4},
+  {l:23.54,t:16.16,w:3.18,h:8.59,k:"b",dx:-17.54,dy:9.84,r:-2.2},
+  {l:23.54,t:29.05,w:3.18,h:8.59,k:"b",dx:-17.54,dy:-3.05,r:0.0},
+  {l:29.87,t:16.16,w:3.18,h:8.59,k:"b",dx:-23.87,dy:9.84,r:2.2},
+  {l:29.87,t:29.05,w:3.18,h:8.59,k:"b",dx:-23.87,dy:-3.05,r:4.4},
+  {l:36.22,t:16.13,w:3.20,h:8.65,k:"d",dx:-30.22,dy:9.87,r:6.6},
+  {l:36.22,t:29.03,w:3.20,h:8.65,k:"d",dx:-30.22,dy:-3.03,r:8.8},
+  {l:36.23,t:41.94,w:3.18,h:8.59,k:"b",dx:-30.23,dy:-15.94,r:-8.8},
+  {l:42.59,t:15.99,w:3.18,h:8.59,k:"b",dx:-36.59,dy:10.01,r:-6.6},
+  {l:48.94,t:15.96,w:3.20,h:8.65,k:"d",dx:-42.94,dy:10.04,r:-4.4},
+  {l:48.95,t:29.05,w:3.18,h:8.59,k:"b",dx:-42.95,dy:-3.05,r:-2.2},
+  {l:55.30,t:15.96,w:3.20,h:8.65,k:"d",dx:-49.30,dy:10.04,r:0.0},
+  {l:55.31,t:29.05,w:3.18,h:8.59,k:"b",dx:-49.31,dy:-3.05,r:2.2},
+  {l:55.30,t:41.92,w:3.20,h:8.65,k:"d",dx:-49.30,dy:-15.92,r:4.4},
+  {l:61.67,t:15.99,w:3.18,h:8.59,k:"b",dx:-55.67,dy:10.01,r:6.6},
+  {l:61.66,t:29.03,w:3.20,h:8.65,k:"d",dx:-55.66,dy:-3.03,r:8.8},
+  {l:61.67,t:41.94,w:3.18,h:8.59,k:"b",dx:-55.67,dy:-15.94,r:-8.8},
+  {l:68.03,t:15.99,w:3.18,h:8.59,k:"b",dx:-62.03,dy:10.01,r:-6.6},
+  {l:68.03,t:29.05,w:3.18,h:8.59,k:"b",dx:-62.03,dy:-3.05,r:-4.4},
+  {l:68.03,t:41.94,w:3.18,h:8.59,k:"b",dx:-62.03,dy:-15.94,r:-2.2},
+  {l:74.40,t:15.99,w:3.18,h:8.59,k:"b",dx:-68.40,dy:10.01,r:0.0},
+  {l:80.75,t:15.96,w:3.20,h:8.65,k:"d",dx:-74.75,dy:10.04,r:2.2},
+  {l:80.76,t:29.87,w:3.18,h:8.59,k:"b",dx:-74.76,dy:-3.87,r:4.4},
+  {l:87.12,t:15.99,w:3.18,h:8.59,k:"b",dx:-81.12,dy:10.01,r:6.6},
+  {l:93.48,t:15.99,w:3.18,h:8.59,k:"r",dx:-87.48,dy:10.01,r:8.8},
+  {l:3.37,t:53.98,w:4.71,h:12.72,k:"r",dx:2.63,dy:-27.98,r:-8.8},
+  {l:10.80,t:55.37,w:3.20,h:8.65,k:"d",dx:-4.80,dy:-29.37,r:-6.6},
+  {l:10.81,t:68.24,w:3.18,h:8.59,k:"b",dx:-4.81,dy:-42.24,r:-4.4},
+  {l:17.18,t:55.39,w:3.18,h:8.59,k:"b",dx:-11.18,dy:-29.39,r:-2.2},
+  {l:23.54,t:55.39,w:3.18,h:8.59,k:"b",dx:-17.54,dy:-29.39,r:0.0},
+  {l:23.54,t:68.24,w:3.18,h:8.59,k:"b",dx:-17.54,dy:-42.24,r:2.2},
+  {l:23.54,t:81.09,w:3.18,h:8.59,k:"b",dx:-17.54,dy:-55.09,r:4.4},
+  {l:55.31,t:54.83,w:3.18,h:8.59,k:"b",dx:-49.31,dy:-28.83,r:6.6},
+];
+
+// concierge slide 5: the two single-path logos, read raw so the client can
+// sample + interpolate their outlines into a genuine shape morph
+const firstPathD = (svg: string) => (svg.match(/\sd="([^"]+)"/) || [, ""])[1];
+const crmMorph =
+  name === "crm"
+    ? {
+        sf: firstPathD(readFileSync(join(process.cwd(), "public/img/projects/concierge/05_salesforce-logo.svg"), "utf-8")),
+        iep: firstPathD(readFileSync(join(process.cwd(), "public/img/projects/concierge/05_iep-logo.svg"), "utf-8")),
+      }
+    : { sf: "", iep: "" };
+
+// concierge slide 6: two archetype circles with tag pills
+const conciergeDuo = [
+  { img: `${cBase}/06_in-person-concierge.png`, tag: `${cBase}/06_in-person-concierge-tag.svg`, alt: "In-person Concierge", tw: 229, th: 56 },
+  { img: `${cBase}/06_vertual-concierge.png`, tag: `${cBase}/06_virtual-concierge-tag.svg`, alt: "Virtual Concierge", tw: 207, th: 56 },
+];
+
+// the five BU bars that grow before merging into one (heights vary)
+const chartBars = ["58%", "80%", "64%", "90%", "72%"];
+
+// panel deck · slide 1: the four business units feeding into VEP. Each arrow
+// is pre-oriented for its card, so only the draw direction differs.
+// `s` is an optical scale: the lockups have equal bounding-box heights but
+// read at different sizes, so each gets a hand-tuned multiplier.
+const vepUnits = [
+  { logo: `${vepBase}/01_turbotax-logo.svg`, alt: "TurboTax", w: 238, h: 50, s: 1.25, arrow: `${vepBase}/01_arrow_style01.svg`, aw: 316, ah: 269, k: "a" },
+  { logo: `${vepBase}/01_quickbooks-logo.svg`, alt: "QuickBooks", w: 298, h: 56, s: 1.5, arrow: `${vepBase}/01_arrow_style02.svg`, aw: 71, ah: 152, k: "b" },
+  { logo: `${vepBase}/01_mailchimp-logo.svg`, alt: "Mailchimp", w: 274, h: 56, s: 1.4, arrow: `${vepBase}/01_arrow_style03.svg`, aw: 105, ah: 178, k: "c" },
+  { logo: `${vepBase}/01_creditkarma-logo.svg`, alt: "Credit Karma", w: 304, h: 50, s: 1.5, arrow: `${vepBase}/01_arrow_style04.svg`, aw: 271, ah: 245, k: "d" },
+];
+
+// Illustrator exports carry generic .st1/.st2/... classes in an internal
+// <style> block. Inlined SVGs share the page, so those styles are global and
+// collide across files; scope each stylesheet to its wrapper before inlining.
+const scopeSvgStyles = (svg: string, scope: string) =>
+  svg.replace(/<style([^>]*)>([\s\S]*?)<\/style>/g, (_all, attrs, css) => {
+    const scoped = css.replace(/\.st(\d+)\b/g, `${scope} .st$1`);
+    return `<style${attrs}>${scoped}</style>`;
+  });
+
+// grandpa is inlined (not an <img>) so CSS can animate the parts inside it,
+// like the .gp-eyes group for the blink
+const grandpaSvg =
+  name === "grandpa"
+    ? readFileSync(join(process.cwd(), "public/img/projects/salesforce-to-iep/01_grandpa-simpsons.svg"), "utf-8")
+    : "";
+
+// the capability map is inlined too; its redline annotations are authored as
+// grouped layers (#redline_1 through #redline_6), each marker + number +
+// connector moving as one unit
+const capmapSvg =
+  name === "capmap"
+    ? scopeSvgStyles(
+        readFileSync(join(process.cwd(), "public/img/projects/salesforce-to-iep/06_e2e-capability-map.svg"), "utf-8"),
+        ".capmap-svg",
+      )
+    : "";
+
+// the implementation redlining spec, inlined and ready for the same draw-in
+// treatment once its annotations are grouped (redline_1..N) in the source
+const redliningSvg =
+  name === "redlining"
+    ? scopeSvgStyles(
+        readFileSync(join(process.cwd(), "public/img/projects/salesforce-to-iep/10_redlining.svg"), "utf-8"),
+        ".redlining-svg",
+      )
+    : "";
+
+// panel deck · slides 2 + 4: inlined so their internals can animate. The bar
+// chart's merged shape is tagged .bc-merged; the ecosystem's spokes, dots,
+// ring, and logo groups are tagged eco-*.
+const vepChartSvg =
+  name === "vepchart"
+    ? scopeSvgStyles(
+        readFileSync(join(process.cwd(), "public/img/about-work/02_unique/02_bar-chart.svg"), "utf-8"),
+        ".vepchart-svg",
+      )
+    : "";
+
+const ecosystemSvg =
+  name === "ecosystem"
+    ? scopeSvgStyles(
+        readFileSync(join(process.cwd(), "public/img/about-work/04_ecosystem/04_vep-ecosystem.svg"), "utf-8"),
+        ".ecosystem-svg",
+      )
+    : "";
+
+// concierge slide 4: the ultra-wide E2E flow, inlined so it can scale cleanly
+const flowSvg =
+  name === "flow"
+    ? scopeSvgStyles(
+        readFileSync(join(process.cwd(), "public/img/projects/concierge/04_e2e-concierge-flow.svg"), "utf-8"),
+        ".flow-svg",
+      )
+    : "";
+
+const personas = [
+  { img: `${base}/02_persona_partner-outsourced.png`, cap: "Partner outsourced" },
+  { img: `${base}/02_persona_intuit-badged.png`, cap: "Intuit badged" },
+  { img: `${base}/02_persona_tier2-lead-sme.png`, cap: "Tier 2/Lead/SME" },
+];
+
+const research = [
+  { img: `${base}/04a_FMH.png`, alt: "Follow Me Home session recording" },
+  { img: `${base}/04b_service-design-blueprint.png`, alt: "Service design blueprint" },
+  { img: `${base}/04c_experience-design-blueprint.png`, alt: "Experience design blueprint" },
+  { img: `${base}/04d_journey-map-key.svg`, alt: "Journey map key" },
+];
+
+const framework = [
+  { tone: "gray", label: "No enhancement", cap: "Existing IEP capabilities ready to use" },
+  { tone: "blue", label: "Enhancement", cap: "Needed strengthening for durability" },
+  { tone: "green", label: "Net new", cap: "Missing capabilities to be designed and built" },
+];
+
+// the impact deck: every screen in 11_deck/, cycled like a shuffled pile
+const deckImgs =
+  name === "deck"
+    ? readdirSync(join(process.cwd(), "public/img/projects/salesforce-to-iep/11_deck"))
+        .filter((f) => /\.(png|jpe?g|webp)$/i.test(f))
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+        .map((f) => `${base}/11_deck/${encodeURIComponent(f)}`)
+    : [];
+
+// --- ai-native compositions ---------------------------------------------
+// slide 2: two expert archetypes, circular photo + tag pill
+const archetypes = [
+  { img: `${aiBase}/02_archetype_product-expert.png`, tag: `${aiBase}/02_product-expert-tag.svg`, alt: "TT Product Expert", tw: 210, th: 56 },
+  { img: `${aiBase}/02_archetype_domain-expert.png`, tag: `${aiBase}/02_domain-expert-tag.svg`, alt: "TT Domain Expert", tw: 212, th: 56 },
+];
+
+// slide 3: work comes into IEP. Icons ring a browser window, each with an
+// arrow pointing inward. pos drives placement + arrow flip (see CSS); arrow
+// picks the style: "02" is the wide down-right curve, "01" the tall down-left.
+const arrowSrc = {
+  "01": { src: `${aiBase}/03_arrow-style_01.svg`, w: 92, h: 228 },
+  "02": { src: `${aiBase}/03_arrow-style_02.svg`, w: 202, h: 125 },
+} as const;
+
+const workIcons = [
+  { icon: `${aiBase}/03_taxes.svg`, alt: "Taxes", w: 131, h: 133, pos: "tl", arrow: "02" },
+  { icon: `${aiBase}/03_shopping-cart.svg`, alt: "Shopping cart", w: 131, h: 118, pos: "tr", arrow: "01" },
+  { icon: `${aiBase}/03_investigation.svg`, alt: "Account lookup", w: 117, h: 99, pos: "br", arrow: "02" },
+  { icon: `${aiBase}/03_documents.svg`, alt: "Documents", w: 109, h: 132, pos: "bc", arrow: "01" },
+  { icon: `${aiBase}/03_account-lookup.svg`, alt: "Case work", w: 131, h: 98, pos: "bl", arrow: "02" },
+] as const;
+---
+
+{name === "grandpa" && (
+  <div class="comp comp-grandpa">
+    <div class="pc pc-cloud" data-reveal style="--reveal-delay:220ms">
+      <div data-parallax data-speed-x="34" data-speed-y="48">
+        <img class="cloud-drift" src={`${base}/03_sfdc-logo.svg`} alt="" width="143" height="100" />
+      </div>
+    </div>
+    <div data-reveal data-from="right" style="--reveal-delay:60ms">
+      <div class="grandpa-shake gp-svg" role="img" aria-label="Angry old man yelling at the Salesforce cloud">
+        <Fragment set:html={grandpaSvg} />
+      </div>
+    </div>
+  </div>
+)}
+
+{name === "personas" && (
+  <div class="comp comp-personas">
+    <p class="personas-head" data-reveal>Type of product experts ...</p>
+    <div class="personas-row" data-reveal style="--reveal-delay:120ms">
+      {personas.map((p, i) => (
+        <figure class="persona">
+          <div data-parallax data-speed-x={String(6 - i * 6)} data-speed-y={String(10 + i * 6)}>
+            <span class="persona-hov">
+              <img class={`float fl-${["a", "b", "c"][i]}`} src={p.img} alt={p.cap} width="594" height="594" />
+            </span>
+          </div>
+          <figcaption>{p.cap}</figcaption>
+        </figure>
+      ))}
+    </div>
+  </div>
+)}
+
+{name === "goals" && (
+  <div class="comp comp-goals" data-reveal>
+    <div class="goal-side">
+      <div class="goal-logo" data-parallax data-speed-x="8" data-speed-y="18">
+        <span class="g-in g-logo-sfdc">
+          <img class="float fl-a" src={`${base}/03_sfdc-logo.svg`} alt="Salesforce" width="143" height="100" />
+        </span>
+      </div>
+      <span class="g-in g-laptop-sfdc">
+        <img class="goal-laptop" src={`${base}/03_sfdc-laptop.svg`} alt="Salesforce workspace on a laptop" width="400" height="223" />
+      </span>
+    </div>
+    <div class="goal-arrow">
+      <div data-parallax data-speed-x="-14" data-speed-y="0">
+        <span class="g-in g-arrow">
+          <img src={`${base}/03_arrow.svg`} alt="" width="149" height="89" />
+        </span>
+      </div>
+    </div>
+    <div class="goal-side">
+      <div class="goal-logo" data-parallax data-speed-x="-8" data-speed-y="14">
+        <span class="g-in g-logo-iep">
+          <img class="float fl-b" src={`${base}/03_iep-logo.svg`} alt="IEP" width="100" height="101" />
+        </span>
+      </div>
+      <span class="g-in g-laptop-iep">
+        <img class="goal-laptop" src={`${base}/03_iep-laptop.svg`} alt="IEP workspace on a laptop" width="400" height="223" />
+      </span>
+    </div>
+  </div>
+)}
+
+{name === "research" && (
+  <div class="comp comp-research" data-reveal>
+    {research.map((r, i) => (
+      <figure class={`research-tile rt-${i + 1}`} style={`--d:${0.1 + i * 0.15}s`}>
+        <img src={r.img} alt={r.alt} loading="lazy" />
+      </figure>
+    ))}
+  </div>
+)}
+
+{name === "capmap" && (
+  <div class="comp comp-capmap" data-reveal>
+    <div class="capmap-svg" role="img" aria-label="E2E capability map built on the IDEAL framework">
+      <Fragment set:html={capmapSvg} />
+    </div>
+  </div>
+)}
+
+{name === "assist" && (
+  <div class="comp comp-assist" data-reveal>
+    <div class="assist-crop">
+      <img
+        src={`${base}/08_ai-powered-expert-support.png`}
+        alt="Intuit Assist summarizing a support request inside the browser"
+        width="2772"
+        height="1744"
+        loading="lazy"
+      />
+    </div>
+  </div>
+)}
+
+{name === "redlining" && (
+  <div class="comp comp-redlining" data-reveal>
+    <div class="redlining-svg" role="img" aria-label="Redlined spec of the AI support-request card">
+      <Fragment set:html={redliningSvg} />
+    </div>
+  </div>
+)}
+
+{name === "deck" && (
+  <div class="comp comp-deck" data-reveal>
+    <div class="deck-stack" data-deck>
+      {deckImgs.map((src, i) => (
+        <figure class="deck-card">
+          <img
+            src={src}
+            alt={`IEP screen ${i + 1} of ${deckImgs.length}`}
+            width="1366"
+            height="768"
+            loading={i < 3 ? "eager" : "lazy"}
+          />
+        </figure>
+      ))}
+    </div>
+  </div>
+)}
+
+{name === "framework" && (
+  <div class="comp comp-framework" data-reveal>
+    {framework.map((f, i) => (
+      <div class="fw-row" style={`--d:${0.9 + i * 0.55}s`}>
+        <span class={`fw-pill fw-${f.tone} float fl-${["a", "b", "c"][i]}`}>{f.label}</span>
+        <span class="fw-cap">{f.cap}</span>
+      </div>
+    ))}
+  </div>
+)}
+
+{name === "conclusion" && (
+  <div class="comp comp-conclusion">
+    <div class="pc cc-table" data-reveal>
+      <div data-parallax data-speed-x="0" data-speed-y="6">
+        <img src={`${base}/12a_conclusion_table.svg`} alt="Customer timeline card" width="516" height="658" />
+      </div>
+    </div>
+    <div class="pc cc-expert2" data-reveal style="--reveal-delay:180ms">
+      <div data-parallax data-speed-x="-10" data-speed-y="20">
+        <img class="float fl-a" src={`${base}/12d_conclusion_expert2.svg`} alt="" width="190" height="190" />
+      </div>
+    </div>
+    <div class="pc cc-ctas" data-reveal data-from="right" style="--reveal-delay:300ms">
+      <div data-parallax data-speed-x="-16" data-speed-y="10">
+        <img class="float fl-b" src={`${base}/12b_conclusion_CTAs.svg`} alt="" width="314" height="212" />
+      </div>
+    </div>
+    <div class="pc cc-expert1" data-reveal style="--reveal-delay:240ms">
+      <div data-parallax data-speed-x="12" data-speed-y="16">
+        <img class="float fl-c" src={`${base}/12c_conclusion_expert1.svg`} alt="" width="190" height="190" />
+      </div>
+    </div>
+    <div class="pc cc-star1" data-reveal style="--reveal-delay:420ms">
+      <div data-parallax data-speed-x="10" data-speed-y="24">
+        <img class="float fl-b" src={`${base}/12f_conclusion_star1.svg`} alt="" width="85" height="92" />
+      </div>
+    </div>
+    <div class="pc cc-star2" data-reveal style="--reveal-delay:480ms">
+      <div data-parallax data-speed-x="-12" data-speed-y="18">
+        <img class="float fl-c" src={`${base}/12g_conclusion_star2.svg`} alt="" width="85" height="92" />
+      </div>
+    </div>
+    <div class="pc cc-arrow" data-reveal style="--reveal-delay:360ms">
+      <div data-parallax data-speed-x="8" data-speed-y="12">
+        <img src={`${base}/12e_conclusion_arrow.svg`} alt="" width="281" height="92" />
+      </div>
+    </div>
+  </div>
+)}
+
+{name === "hijared" && (
+  <div class="comp comp-hijared">
+    <figure class="hi-portrait" data-reveal>
+      <div data-parallax data-speed-x="0" data-speed-y="10">
+        <img src="/img/jared.jpg" alt="Jared Gase" width="600" height="600" />
+      </div>
+    </figure>
+  </div>
+)}
+
+{name === "vepbreakdown" && (
+  <div class="comp comp-vepbreakdown">
+    <div class="vb-vep" data-reveal>
+      <div data-parallax data-speed-x="0" data-speed-y="10">
+        <img class="float fl-a" src={`${vepBase}/01_vep-logo.svg`} alt="VEP" width="342" height="122" />
+      </div>
+    </div>
+    {vepUnits.map((u, i) => (
+      <span class={`vb-arrow vb-arr-${u.k}`} data-reveal style={`--reveal-delay:${420 + i * 160}ms`}>
+        <img src={u.arrow} alt="" width={u.aw} height={u.ah} />
+      </span>
+    ))}
+    <div class="vb-cards">
+      {vepUnits.map((u, i) => (
+        <div class="vb-card" data-reveal style={`--reveal-delay:${120 + i * 110}ms;--s:${u.s}`}>
+          <img src={u.logo} alt={u.alt} width={u.w} height={u.h} />
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{name === "vepchart" && (
+  <div class="comp comp-vepchart">
+    <div class="vepchart-svg" role="img" aria-label="VEP works vertically across teams and horizontally across every business unit">
+      <Fragment set:html={vepChartSvg} />
+    </div>
+    <div class="bc-bars" aria-hidden="true">
+      {chartBars.map((h) => <span class="bc-bar" style={`--h:${h}`}></span>)}
+    </div>
+  </div>
+)}
+
+{name === "ecosystem" && (
+  <div class="comp comp-ecosystem">
+    <div class="ecosystem-svg" role="img" aria-label="VEP at the center of an ecosystem of Intuit business units">
+      <Fragment set:html={ecosystemSvg} />
+    </div>
+  </div>
+)}
+
+{name === "platformmindset" && (
+  <div class="comp comp-platformmindset">
+    <div class="pm-chat pm-tt" data-reveal data-from="left">
+      <div data-parallax data-speed-x="6" data-speed-y="10">
+        <img src={`${pmBase}/03_tt-chat.svg`} alt="TurboTax chat" width="430" height="630" />
+      </div>
+    </div>
+    <div class="pm-badge pm-tt-icon" data-reveal style="--reveal-delay:180ms">
+      <div data-parallax data-speed-x="8" data-speed-y="16">
+        <img class="float fl-a" src={`${pmBase}/03_tt-icon.svg`} alt="" width="180" height="180" />
+      </div>
+    </div>
+    <div class="pm-chat pm-ck" data-reveal data-from="right" style="--reveal-delay:260ms">
+      <div data-parallax data-speed-x="-6" data-speed-y="14">
+        <img src={`${pmBase}/03_ck-chat.svg`} alt="Credit Karma contact options" width="430" height="590" />
+      </div>
+    </div>
+    <div class="pm-badge pm-ck-icon" data-reveal style="--reveal-delay:420ms">
+      <div data-parallax data-speed-x="-8" data-speed-y="18">
+        <img class="float fl-b" src={`${pmBase}/03_ck-icon.svg`} alt="" width="180" height="180" />
+      </div>
+    </div>
+    <span class="pm-arrow pm-arr-top" data-reveal style="--reveal-delay:560ms">
+      <img src={`${pmBase}/03_arrow_style02.svg`} alt="" width="207" height="124" />
+    </span>
+    <span class="pm-arrow pm-arr-bot" data-reveal style="--reveal-delay:700ms">
+      <img src={`${pmBase}/03_arrow_style01.svg`} alt="" width="211" height="136" />
+    </span>
+  </div>
+)}
+
+{name === "archetypes2" && (
+  <div class="comp comp-archetypes2">
+    <div class="arch-row" data-reveal>
+      {archetypes.map((a, i) => (
+        <figure class="arch-card">
+          <div data-parallax data-speed-x={String(i === 0 ? 6 : -6)} data-speed-y="12">
+            <span class="arch-zoom">
+              <img class={`float fl-${["a", "b"][i]}`} src={a.img} alt={a.alt} width="594" height="594" />
+            </span>
+          </div>
+          <img class="arch-tag" src={a.tag} alt={a.alt} width={a.tw} height={a.th} />
+        </figure>
+      ))}
+    </div>
+  </div>
+)}
+
+{name === "workinto" && (
+  <div class="comp comp-workinto">
+    <div class="wi-window" data-reveal style="--reveal-delay:80ms">
+      <img src={`${aiBase}/03_browser-window.svg`} alt="Intuit Expert Portal" width="600" height="400" />
+    </div>
+    {workIcons.map((w, i) => (
+      <div class={`wi-sat wi-${w.pos}`} data-reveal style={`--reveal-delay:${260 + i * 130}ms`}>
+        <div data-parallax data-speed-x={String(i % 2 ? -8 : 8)} data-speed-y="10">
+          <img class={`wi-icon float fl-${["b", "c", "a"][i % 3]}`} src={w.icon} alt={w.alt} width={w.w} height={w.h} />
+        </div>
+      </div>
+    ))}
+    {workIcons.map((w, i) => (
+      <span class={`wi-arrow wi-arr-${w.pos} wi-a${w.arrow}`} data-reveal style={`--reveal-delay:${340 + i * 150}ms`}>
+        <img src={arrowSrc[w.arrow].src} alt="" width={arrowSrc[w.arrow].w} height={arrowSrc[w.arrow].h} />
+      </span>
+    ))}
+  </div>
+)}
+
+{name === "conclusion2" && (
+  <div class="comp comp-conclusion2">
+    <figure class="c2-blob" data-reveal>
+      <div data-parallax data-speed-x="4" data-speed-y="8">
+        <img src={`${aiBase}/09_tax-expert.png`} alt="Intuit expert waving" width="600" height="600" />
+      </div>
+    </figure>
+    <div class="pc c2-window" data-reveal data-from="right" style="--reveal-delay:220ms">
+      <div data-parallax data-speed-x="-14" data-speed-y="10">
+        <img src={`${aiBase}/09_ai-native-iep-window.svg`} alt="AI Native IEP chat" width="360" height="494" />
+      </div>
+    </div>
+    <div class="pc c2-iep" data-reveal style="--reveal-delay:140ms">
+      <div data-parallax data-speed-x="10" data-speed-y="18">
+        <img class="float fl-a" src={`${aiBase}/09_iep-logo.svg`} alt="" width="168" height="168" />
+      </div>
+    </div>
+    <div class="pc c2-tt" data-reveal style="--reveal-delay:300ms">
+      <div data-parallax data-speed-x="8" data-speed-y="16">
+        <img class="float fl-b" src={`${aiBase}/09_tt-logo.svg`} alt="" width="132" height="132" />
+      </div>
+    </div>
+    <div class="pc c2-qb" data-reveal style="--reveal-delay:360ms">
+      <div data-parallax data-speed-x="-10" data-speed-y="22">
+        <img class="float fl-c" src={`${aiBase}/09_qb-logo.svg`} alt="" width="132" height="132" />
+      </div>
+    </div>
+    {/* sparkle clusters, drawn in code so each star can twinkle on its own */}
+    <div class="pc c2-spark c2-spark-tl" data-reveal style="--reveal-delay:440ms" aria-hidden="true">
+      <div data-parallax data-speed-x="10" data-speed-y="24">
+        {[
+          { c: "spk-a", d: "0s" },
+          { c: "spk-b", d: "0.9s" },
+          { c: "spk-c", d: "1.7s" },
+        ].map((s) => (
+          <svg class={`spk ${s.c}`} style={`--sd:${s.d}`} viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 0c1.1 8.2 2.7 10.9 12 12-9.3 1.1-10.9 3.8-12 12-1.1-8.2-2.7-10.9-12-12 9.3-1.1 10.9-3.8 12-12Z" />
+          </svg>
+        ))}
+      </div>
+    </div>
+    <div class="pc c2-spark c2-spark-br" data-reveal style="--reveal-delay:500ms" aria-hidden="true">
+      <div data-parallax data-speed-x="-12" data-speed-y="18">
+        {[
+          { c: "spk-a", d: "0.4s" },
+          { c: "spk-b", d: "1.3s" },
+          { c: "spk-c", d: "2.2s" },
+        ].map((s) => (
+          <svg class={`spk ${s.c}`} style={`--sd:${s.d}`} viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 0c1.1 8.2 2.7 10.9 12 12-9.3 1.1-10.9 3.8-12 12-1.1-8.2-2.7-10.9-12-12 9.3-1.1 10.9-3.8 12-12Z" />
+          </svg>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
+
+{name === "research7" && (
+  <div class="comp comp-research7">
+    <img class="r7-app" src={`${aiBase}/07_transcript-app.svg`} alt="Research session transcript in Reduct" width="1000" height="768" />
+    <video
+      class="r7-video"
+      data-lazy-src={`${aiBase}/07_user-interview.mp4`}
+      muted
+      loop
+      playsinline
+      preload="none"
+      aria-label="Clip from a user interview session"
+    ></video>
+  </div>
+)}
+
+{name === "activate" && (
+  <div class="comp comp-activate">
+    <figure class="ac-blob" data-reveal>
+      <div data-parallax data-speed-x="4" data-speed-y="8">
+        <img src={`${cBase}/02_persona_concierge.png`} alt="A TurboTax Concierge welcoming a customer" width="600" height="600" />
+      </div>
+    </figure>
+    <div class="pc ac-card" data-reveal data-from="right" style="--reveal-delay:220ms">
+      <div data-parallax data-speed-x="-14" data-speed-y="10">
+        <img src={`${cBase}/02_expert-card.svg`} alt="A matched TurboTax expert card" width="338" height="420" />
+      </div>
+    </div>
+    <div class="pc ac-tax" data-reveal style="--reveal-delay:120ms">
+      <div data-parallax data-speed-x="10" data-speed-y="18">
+        <img class="float fl-a" src={`${cBase}/02_tax-icon.svg`} alt="" width="109" height="110" />
+      </div>
+    </div>
+    <div class="pc ac-check" data-reveal style="--reveal-delay:180ms">
+      <div data-parallax data-speed-x="12" data-speed-y="16">
+        <img class="float fl-b" src={`${cBase}/02_tt-logo.svg`} alt="" width="132" height="132" />
+      </div>
+    </div>
+    <div class="pc ac-iep" data-reveal style="--reveal-delay:300ms">
+      <div data-parallax data-speed-x="-8" data-speed-y="20">
+        <img class="float fl-c" src={`${cBase}/02_iep-logo.svg`} alt="" width="168" height="168" />
+      </div>
+    </div>
+    <div class="pc ac-cal" data-reveal style="--reveal-delay:360ms">
+      <div data-parallax data-speed-x="-10" data-speed-y="22">
+        <img class="float fl-a" src={`${cBase}/02_calendar-icon.svg`} alt="" width="99" height="100" />
+      </div>
+    </div>
+    <div class="pc ac-notif" data-reveal data-from="left" style="--reveal-delay:440ms">
+      <div data-parallax data-speed-x="8" data-speed-y="12">
+        <img class="float fl-b" src={`${cBase}/02_apt-notification.svg`} alt="Appointment reminder notification" width="386" height="152" />
+      </div>
+    </div>
+  </div>
+)}
+
+{name === "flow" && (
+  <div class="comp comp-flow" data-reveal>
+    <div class="flow-svg" role="img" aria-label="End-to-end Concierge service flow, lead intake through expert handoff">
+      <Fragment set:html={flowSvg} />
+    </div>
+  </div>
+)}
+
+{name === "flowdeck" && (
+  <div
+    class="comp comp-flowdeck"
+    data-reveal
+    role="img"
+    aria-label="Every node of the end-to-end Concierge flow — process boxes and decision diamonds — starts stacked, then fans out in order into the full service flow from lead intake through expert handoff."
+  >
+    <div class="fd-frame" aria-hidden="true"></div>
+    <img class="fd-final" src={`${cBase}/04_e2e-concierge-flow.svg`} alt="" loading="lazy" />
+    <div class="fd-nodes" aria-hidden="true">
+      {flowNodes.map((n, i) => (
+        <span
+          class={`fd-node fd-${n.k}`}
+          style={`--l:${n.l};--t:${n.t};--w:${n.w};--h:${n.h};--dx:${n.dx};--dy:${n.dy};--r:${n.r}deg;--i:${i}`}
+        ></span>
+      ))}
+    </div>
+  </div>
+)}
+
+{name === "infinity" && (
+  <div class="comp comp-infinity" data-reveal role="img" aria-label="An infinity loop endlessly drawing itself — design is never done.">
+    <svg class="nd-loop" viewBox="0 0 147.5 68" data-nd-loop>
+      <path class="nd-track" fill="none" d="M94.65,14a27.5,27.5,0,1,1-.17,39.88L52.93,14.06a27.5,27.5,0,1,0,.12,39.77Z" />
+      <path class="nd-master" fill="none" d="M94.65,14a27.5,27.5,0,1,1-.17,39.88L52.93,14.06a27.5,27.5,0,1,0,.12,39.77Z" />
+    </svg>
+  </div>
+)}
+
+{name === "dotloop" && (
+  <div class="comp comp-dotloop" data-reveal role="img" aria-label="A zero forming from a field of dots, flowing into a one and back again — how I build zero to one.">
+    <canvas class="dl-canvas" data-dotloop></canvas>
+  </div>
+)}
+
+{name === "journey" && (
+  <div class="comp comp-journey" data-reveal role="img" aria-label="A customer journey map: a flowchart of circles, diamonds, and steps, annotated by Customer, CX, and Designer cursors, with the note — zoom out before zooming in.">
+    <div class="jr-bg" aria-hidden="true"></div>
+    <img class="jr-shapes" src={`${jdBase}/03_about-jd_customer-journey.svg`} alt="" loading="lazy" />
+    <p class="jr-text">Zoom out<br />before zooming in</p>
+    <img class="jr-cur jr-customer" src={`${jdBase}/03_about-jd_cursor-user.svg`} alt="" loading="lazy" />
+    <img class="jr-cur jr-cx" src={`${jdBase}/03_about-jd_cursor-cx.svg`} alt="" loading="lazy" />
+    <img class="jr-cur jr-designer" src={`${jdBase}/03_about-jd_cursor-xd.svg`} alt="" loading="lazy" />
+  </div>
+)}
+
+{name === "cardflow" && (
+  <div class="comp comp-cardflow" data-reveal role="img" aria-label="A deck of workflow cards fanning out into an organized, connected flow">
+    <span class="cf-line" aria-hidden="true"></span>
+    {[0, 1, 2, 3, 4].map((i) => (
+      <div class={`cf-card cf-card-${i}`}>
+        <span class="cf-bar"></span>
+        <span class="cf-rows"></span>
+        <span class="cf-node" aria-hidden="true"></span>
+      </div>
+    ))}
+  </div>
+)}
+
+{name === "crm" && (
+  <div class="comp comp-crm" data-reveal role="img" aria-label="The Salesforce logo morphing into the Intuit Expert Portal logo">
+    <svg class="crm-morph" viewBox="0 0 240 240" data-crm-morph>
+      <path class="crm-morph-path" fill="#0d76d3" style="opacity:0" />
+      <path class="crm-real-sf" d={crmMorph.sf} fill="#0d76d3" style="opacity:0" />
+      <path class="crm-iep-final" d={crmMorph.iep} fill="#0d76d3" style="opacity:0" />
+    </svg>
+    {/* hidden source outlines, sampled at runtime */}
+    <svg class="crm-src" aria-hidden="true">
+      <path class="crm-src-sf" d={crmMorph.sf} />
+      <path class="crm-src-iep" d={crmMorph.iep} />
+    </svg>
+  </div>
+)}
+
+{name === "duo" && (
+  <div class="comp comp-duo">
+    <div class="arch-row" data-reveal>
+      {conciergeDuo.map((a, i) => (
+        <figure class="arch-card">
+          <div data-parallax data-speed-x={String(i === 0 ? 6 : -6)} data-speed-y="12">
+            <span class="arch-zoom">
+              <img class={`float fl-${["a", "b"][i]}`} src={a.img} alt={a.alt} width="320" height="320" />
+            </span>
+          </div>
+          <img class="arch-tag" src={a.tag} alt={a.alt} width={a.tw} height={a.th} />
+        </figure>
+      ))}
+    </div>
+  </div>
+)}
+
+{name === "zerotoone" && (
+  <div class="comp comp-zto" data-reveal aria-label="Zero to one">
+    <div class="zto-num" aria-hidden="true">
+      <span class="zto-d zto-d0">0</span>
+      <span class="zto-d zto-d1">1</span>
+    </div>
+  </div>
+)}
+
+{/* about-jd · slide 1: "execution" struck through, "strategic leadership" takes its place */}
+{name === "jdstrike" && (
+  <div class="comp comp-jdstrike" data-reveal aria-label="From execution to strategic leadership">
+    <div class="jds-old">
+      <span class="jds-word">execution</span>
+      <span class="jds-line" aria-hidden="true"></span>
+    </div>
+    <div class="jds-new" aria-hidden="true">
+      <span>strategic</span>
+      <span>leadership</span>
+    </div>
+  </div>
+)}
+
+{/* about-jd · slide 2: shared design artifacts with multiplayer cursors */}
+{name === "jdartifacts" && (
+  <div class="comp comp-jdartifacts" data-reveal aria-label="Directing designers across shared artifacts">
+    <div class="jda-stage">
+      {/* rows: absolute, centers measured from 02_about-jd_example.png (1422x934) */}
+      {[
+        { icon: "sheets", title: "Quarterly Product Backlog" },
+        { icon: "docs", title: "FY Strategic Direction" },
+        { icon: "figma", title: "End-to-End Experience Explorations" },
+        { icon: "slides", title: "Program Performance Overview" },
+        { icon: "docs", title: "Platform Vision Whitepaper" },
+      ].map((r, i) => (
+        <div
+          class="jda-row"
+          style={`top:${1.5 + i * 19.15}%; --reveal-delay:${140 + i * 90}ms`}
+          data-reveal
+          data-from="left"
+        >
+          <img class="jda-icon" src={`${jdBase}/02_about-jd_artifact-${r.icon}.svg`} alt="" width="200" height="200" />
+          <span class="jda-title">{r.title}</span>
+        </div>
+      ))}
+      {/* cursors: provided assets placed so each arrow tip lands where the
+          matching example cursor points (hues line up: content=yellow,
+          product=pink, ux=orange, ui=green, leadership=purple) */}
+      {[
+        { role: "content", l: 7.3, t: 11.5 },
+        { role: "product", l: 79.6, t: 26.0 },
+        { role: "ux", l: 65.8, t: 30.5 },
+        { role: "ui", l: 89.5, t: 49.9 },
+        { role: "leadership", l: 81.0, t: 86.0 },
+      ].map((c, i) => (
+        <img
+          class={`jda-cursor jda-cursor--${c.role}`}
+          style={`left:${c.l}%; top:${c.t}%`}
+          src={`${jdBase}/02_about-jd_cursor-${c.role}.svg`}
+          alt=""
+        />
+      ))}
+    </div>
+  </div>
+)}
+
+{/* about-jd · slide 3: user-flow diagram, generic CX title, multiplayer cursors */}
+{name === "jdflow" && (
+  <div class="comp comp-jdflow" data-reveal aria-label="Mapping the customer journey together">
+    <img class="jdf-diagram" src={`${jdBase}/03_about-jd_customer-journey.svg`} alt="A customer-journey flow diagram" />
+    <span class="jdf-title" data-reveal style="--reveal-delay:260ms">The journey is the product</span>
+    {[
+      { role: "user", x: 4, y: 6 },
+      { role: "cx", x: 74, y: 40 },
+      { role: "xd", x: 66, y: 33 },
+    ].map((c, i) => (
+      <img
+        class={`jdf-cursor jdf-cursor--${c.role}`}
+        style={`left:${c.x}%; top:${c.y}%; --reveal-delay:${480 + i * 150}ms`}
+        src={`${jdBase}/03_about-jd_cursor-${c.role}.svg`}
+        alt=""
+        data-reveal
+      />
+    ))}
+  </div>
+)}
+
+{/* hia · slide 1: two experts, speech bubbles animate the broken escalation */}
+{name === "hiabubbles" && (
+  <div class="comp comp-hiabubbles" data-reveal aria-label="Tier 1 expert escalating to a Tier 2 SME">
+    {/* positions measured pixel-for-pixel from 01_experts-helping-experts_example-layout.png (750 x 400) */}
+    <div class="hb-stage">
+      <img class="hb-photo hb-photo-l" src={`${hiaBase}/01_persona_tier1.png`} alt="A Tier 1 product expert" />
+      <img class="hb-photo hb-photo-r" src={`${hiaBase}/01_persona_tier2.png`} alt="A Tier 2 subject matter expert" />
+      <img class="hb-tag hb-tag-l" src={`${hiaBase}/01_tag_tier1.svg`} alt="Tier 1 Product Expert" />
+      <img class="hb-tag hb-tag-r" src={`${hiaBase}/01_tag_tier2.svg`} alt="Tier 2 SME" />
+      <img class="hb-bubble hb-q" src={`${hiaBase}/01_speech-bubble_question.svg`} alt="" />
+      <svg class="hb-bubble hb-check" viewBox="0 0 58 60" aria-hidden="true">
+        <path class="hb-check-bg" d="M28.5372 3.71853e-05C21.3845 -0.0115011 14.4896 2.66253 9.22131 7.48868C3.95366 12.3175 0.69501 18.9435 0.099945 26.0541C-0.498517 33.1675 1.60626 40.2435 5.99493 45.8771L3.15876 57.1385C2.99975 57.8279 3.16165 58.5491 3.59821 59.1058C4.03477 59.6625 4.69974 59.9914 5.40805 60C5.72607 60 6.04121 59.9394 6.33321 59.8154L17.7445 54.7703C25.6432 58.0241 34.5884 57.5712 42.12 53.5385C49.6486 49.5088 54.9709 42.3207 56.6191 33.9526C58.27 25.5874 56.0727 16.9246 50.6316 10.348C45.1934 3.77116 37.0835 -0.0280237 28.5373 0.000775936L28.5372 3.71853e-05Z" />
+        <path d="M44.1078 23.703L26.6554 41.0667C25.964 41.7545 25.0606 42.0916 24.1598 42.0916C23.2564 42.0916 22.3557 41.749 21.6643 41.0667L12.9381 32.3877C11.5636 31.0202 11.5636 28.7949 12.9381 27.4274C14.3125 26.0599 16.5492 26.0599 17.9237 27.4274L24.157 33.6291L39.1139 18.7483C40.4883 17.3808 42.725 17.3808 44.0995 18.7483C45.4822 20.1103 45.4822 22.3356 44.1078 23.703Z" fill="#fff" />
+      </svg>
+      <svg class="hb-bubble hb-reply" viewBox="0 0 58 60" aria-hidden="true">
+        <path class="hb-reply-bg" d="M28.5372 3.71853e-05C21.3845 -0.0115011 14.4896 2.66253 9.22131 7.48868C3.95366 12.3175 0.69501 18.9435 0.099945 26.0541C-0.498517 33.1675 1.60626 40.2435 5.99493 45.8771L3.15876 57.1385C2.99975 57.8279 3.16165 58.5491 3.59821 59.1058C4.03477 59.6625 4.69974 59.9914 5.40805 60C5.72607 60 6.04121 59.9394 6.33321 59.8154L17.7445 54.7703C25.6432 58.0241 34.5884 57.5712 42.12 53.5385C49.6486 49.5088 54.9709 42.3207 56.6191 33.9526C58.27 25.5874 56.0727 16.9246 50.6316 10.348C45.1934 3.77116 37.0835 -0.0280237 28.5373 0.000775936L28.5372 3.71853e-05Z" />
+        <circle class="hb-dot hb-dot-1" cx="16.3384" cy="29.9067" r="4.15379" />
+        <circle class="hb-dot hb-dot-2" cx="28.5229" cy="29.9067" r="4.15379" />
+        <circle class="hb-dot hb-dot-3" cx="40.7075" cy="29.9067" r="4.15379" />
+      </svg>
+    </div>
+  </div>
+)}
+
+{/* hia · slide 3: escalation rebuilt inside IEP with Intuit Assist in front */}
+{name === "hiasupport" && (
+  <div class="comp comp-hiasupport" data-reveal aria-label="Support request inside IEP with Intuit Assist">
+    <div class="hs-stage">
+      <figure class="hs-photo"><img src={`${hiaBase}/03_persona_tier2.png`} alt="A Tier 2 subject matter expert" /></figure>
+      <img class="hs-window" src={`${hiaBase}/03_iep-chat_support-window.svg`} alt="An IEP support-request panel" />
+      <img class="hs-icon hs-iep" src={`${hiaBase}/03_icons_iep.svg`} alt="" />
+      <img class="hs-icon hs-tt" src={`${hiaBase}/03_icons_turbotax.svg`} alt="" />
+      <img class="hs-icon hs-assist" src={`${hiaBase}/03_icons_intuit-assist.svg`} alt="" />
+      {["top", "bot"].map((pos) => (
+        <span class={`hs-cluster hs-cluster-${pos}`} aria-hidden="true">
+          {["a", "b", "c"].map((k) => (
+            <span class={`hs-spark hs-spark-${k}`}>
+              <svg viewBox="0 0 24 24"><path d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12Z" /></svg>
+            </span>
+          ))}
+        </span>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* hia · slide 8: the design process loops, never done */}
+{name === "hiaprocess" && (
+  <div class="comp comp-hiaprocess" data-reveal aria-label="The design process loops continuously">
+    <svg class="hp-svg" viewBox="0 0 200 200" role="img" aria-label="A looping design process">
+      <defs>
+        <marker id="hp-arrow" markerWidth="6" markerHeight="6" refX="2.6" refY="3" orient="auto">
+          <path d="M0 0 L6 3 L0 6 Z" fill="var(--accent)" />
+        </marker>
+      </defs>
+      <circle class="hp-track" cx="100" cy="100" r="68" />
+      <g class="hp-ring">
+        <path d="M36 77 A68 68 0 0 1 164 77" marker-end="url(#hp-arrow)" />
+        <path d="M164 123 A68 68 0 0 1 36 123" marker-end="url(#hp-arrow)" />
+      </g>
+      <g class="hp-nodes">
+        <circle cx="100" cy="32" r="5" />
+        <circle cx="168" cy="100" r="5" />
+        <circle cx="100" cy="168" r="5" />
+        <circle cx="32" cy="100" r="5" />
+      </g>
+    </svg>
+  </div>
+)}
+
+{/* hia · slide 4: a question and an alert both route to support, which searches
+    content resources in turn, then replies */}
+{name === "deescalation" && (
+  <div class="comp comp-deesc" data-reveal role="img" aria-label="A question and an alert both route to support, which searches internal articles, external articles, community, and memos in turn before replying with an answer.">
+    <div class="de-stage">
+      <svg class="de-wires" viewBox="0 0 1045 824" aria-hidden="true">
+        <path class="de-wire de-wire-q" d="M300 196 H522" />
+        <path class="de-wire de-wire-a" d="M744 196 H522" />
+        <path class="de-wire de-wire-down" d="M522 196 V404" />
+        <path class="de-arrow" d="M506 388 L522 407 L538 388" />
+      </svg>
+      <img class="de-icon de-question" src={`${hiaBase}/04_de-escalation_question.svg`} alt="" />
+      <img class="de-icon de-ask" src={`${hiaBase}/04_de-escalation_ask.svg`} alt="" />
+      <img class="de-icon de-support" src={`${hiaBase}/04_de-escalation_support.svg`} alt="" />
+      <div class="de-process" aria-hidden="true">
+        <img class="de-step de-step-1" src={`${hiaBase}/04_de-escalation_process-01-internal-articles.svg`} alt="" />
+        <span class="de-seg de-seg-1"></span>
+        <img class="de-step de-step-2" src={`${hiaBase}/04_de-escalation_process-02-external-articles.svg`} alt="" />
+        <span class="de-seg de-seg-2"></span>
+        <img class="de-step de-step-3" src={`${hiaBase}/04_de-escalation_process-03-community.svg`} alt="" />
+        <span class="de-seg de-seg-3"></span>
+        <img class="de-step de-step-4" src={`${hiaBase}/04_de-escalation_process-04-memos.svg`} alt="" />
+        <span class="de-seg de-seg-4"></span>
+        <img class="de-step de-step-5" src={`${hiaBase}/04_de-escalation_process-05-reply.svg`} alt="" />
+      </div>
+    </div>
+  </div>
+)}
+
+<script>
+  import { separate } from "flubber";
+
+  // research 2x2: click a tile to zoom it over the grid, click again (or
+  // another tile, or Escape) to restore
+  document.querySelectorAll<HTMLElement>(".comp-research .research-tile").forEach((tile) => {
+    tile.addEventListener("click", () => {
+      const wasZoomed = tile.classList.contains("is-zoom");
+      tile.closest(".comp-research")
+        ?.querySelectorAll(".is-zoom")
+        .forEach((z) => z.classList.remove("is-zoom"));
+      if (!wasZoomed) tile.classList.add("is-zoom");
+    });
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    document.querySelectorAll(".comp-research .is-zoom").forEach((z) => z.classList.remove("is-zoom"));
+  });
+
+  // Heavy media (the interview gif) carries no src until the slide is close,
+  // so the page never pays for it unless the viewer actually gets there.
+  document.querySelectorAll<HTMLElement>("[data-lazy-src]").forEach((el) => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          io.disconnect();
+          const src = el.dataset.lazySrc;
+          if (!src) return;
+          (el as HTMLImageElement | HTMLVideoElement).src = src;
+          if (el instanceof HTMLVideoElement) {
+            el.load();
+            el.play().catch(() => {
+              /* autoplay blocked; the poster frame still shows */
+            });
+          }
+        }
+      },
+      { rootMargin: "400px 0px" },
+    );
+    io.observe(el);
+  });
+
+  // VEP chart: once the slide arrives, each BU bar grows left to right at its
+  // own height, then they all merge into the single platform-wide bar.
+  const reduceChart = window.matchMedia("(prefers-reduced-motion: reduce)");
+  document.querySelectorAll<HTMLElement>(".comp-vepchart").forEach((comp) => {
+    const bars = Array.from(comp.querySelectorAll<HTMLElement>(".bc-bar"));
+    if (!bars.length) return;
+    if (reduceChart.matches) {
+      comp.classList.add("is-merged", "is-swapped");
+      bars.forEach((b) => b.classList.add("is-grown"));
+      return;
+    }
+    let played = false;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting || played) continue;
+          played = true;
+          io.unobserve(e.target);
+          const step = 320;
+          bars.forEach((b, i) => window.setTimeout(() => b.classList.add("is-grown"), 500 + i * step));
+          const settled = 500 + bars.length * step + 400;
+          window.setTimeout(() => comp.classList.add("is-merged"), settled);
+          window.setTimeout(() => comp.classList.add("is-swapped"), settled + 700);
+        }
+      },
+      { threshold: 0.4 },
+    );
+    io.observe(comp);
+  });
+
+  // impact deck: shuffle the top card to the back every couple of seconds.
+  // Runs only while on screen, pauses on hover, and sits still under
+  // reduced motion (top card stays visible).
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  document.querySelectorAll<HTMLElement>("[data-deck]").forEach((stack) => {
+    const order = Array.from(stack.children) as HTMLElement[];
+    const relayer = () =>
+      order.forEach((c, i) => {
+        c.style.zIndex = String(order.length - i);
+        c.style.setProperty("--depth", String(Math.min(i, 4)));
+        c.classList.toggle("is-front", i === 0);
+      });
+    relayer();
+    if (order.length < 2 || reduceMotion.matches) return;
+    let paused = false;
+    let visible = false;
+    stack.addEventListener("mouseenter", () => (paused = true));
+    stack.addEventListener("mouseleave", () => (paused = false));
+    new IntersectionObserver(
+      (es) => es.forEach((e) => (visible = e.isIntersecting)),
+      { threshold: 0.3 },
+    ).observe(stack);
+    setInterval(() => {
+      if (paused || !visible || document.hidden) return;
+      const top = order.shift()!;
+      order.push(top);
+      top.classList.add("is-out");
+      window.setTimeout(relayer, 320);
+      window.setTimeout(() => top.classList.remove("is-out"), 660);
+    }, 2400);
+  });
+  // clicking anywhere off the tiles also restores the 2x2
+  document.addEventListener("click", (e) => {
+    if ((e.target as HTMLElement).closest(".research-tile")) return;
+    document.querySelectorAll(".comp-research .is-zoom").forEach((z) => z.classList.remove("is-zoom"));
+  });
+
+  // crm slide: a genuine cloud -> IEP morph. The IEP mark is three arrows (six
+  // subpaths), so a single closed loop can't draw it — that was the broken
+  // frame. flubber.separate() splits the cloud into those pieces and morphs each
+  // one correctly. Both logos are normalised into the same 240 box (matching the
+  // crisp logos' fit transform) so t=0 lands on the cloud and t=1 on the IEP.
+  const crmReduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  document.querySelectorAll<SVGSVGElement>("[data-crm-morph]").forEach((svg) => {
+    const comp = svg.closest(".comp-crm")!;
+    const sfEl = comp.querySelector<SVGPathElement>(".crm-src-sf");
+    const iepEl = comp.querySelector<SVGPathElement>(".crm-src-iep");
+    const src = comp.querySelector<SVGSVGElement>(".crm-src");
+    const out = svg.querySelector<SVGPathElement>(".crm-morph-path");
+    const finalEl = svg.querySelector<SVGPathElement>(".crm-iep-final");
+    const realSf = svg.querySelector<SVGPathElement>(".crm-real-sf");
+    if (!sfEl || !iepEl || !src || !out || !finalEl || !realSf) return;
+
+    const sample = (path: SVGPathElement, count: number) => {
+      const len = path.getTotalLength();
+      const pts: [number, number][] = [];
+      for (let i = 0; i < count; i++) {
+        const p = path.getPointAtLength((len * i) / count);
+        pts.push([p.x, p.y]);
+      }
+      return pts;
+    };
+    // map points into the shared 240 box, matching the fit() transform below so
+    // the morph endpoints line up with the crisp logos
+    const norm = (pts: [number, number][], bb: DOMRect) => {
+      const s = 170 / Math.max(bb.width, bb.height);
+      const cx = bb.x + bb.width / 2, cy = bb.y + bb.height / 2;
+      return pts.map(([x, y]) => [120 + s * (x - cx), 120 + s * (y - cy)] as [number, number]);
+    };
+    const fit = (el: SVGPathElement) => {
+      const bb = el.getBBox();
+      const s = 170 / Math.max(bb.width, bb.height);
+      return `translate(120 120) scale(${s}) translate(${-(bb.x + bb.width / 2)} ${-(bb.y + bb.height / 2)})`;
+    };
+    finalEl.setAttribute("transform", fit(iepEl));
+    realSf.setAttribute("transform", fit(sfEl));
+
+    // the cloud is one ring; the IEP mark is its six subpaths, each sampled in
+    // the SHARED iep box so they keep their arrangement
+    const iepBB = iepEl.getBBox();
+    const subs = (iepEl.getAttribute("d") || "").match(/[Mm][^Mm]*/g) || [];
+    const tmp = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    src.appendChild(tmp);
+    const iepRings = subs.map((d) => {
+      tmp.setAttribute("d", d);
+      return norm(sample(tmp, 64), iepBB);
+    });
+    tmp.remove();
+    const cloudRing = norm(sample(sfEl, 200), sfEl.getBBox());
+
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    let interp: ((t: number) => string) | null = null;
+    try {
+      // t = 0 -> cloud, t = 1 -> IEP (cloud split across the six pieces)
+      interp = separate(cloudRing, iepRings, { single: true, maxSegmentLength: 6 }) as (t: number) => string;
+    } catch { interp = null; }
+
+    // Show ONLY the morph path — no opacity crossfades anywhere, so there is
+    // nothing to fade in/out and nothing to flash. Flubber's endpoints already
+    // ARE the shapes: t=0 is the Salesforce cloud, t=1 is the IEP mark. The crisp
+    // SVG logos are only used as a no-JS / reduced-motion fallback.
+    finalEl.style.opacity = "0"; realSf.style.opacity = "0";
+    if (!interp) { finalEl.style.opacity = "1"; return; } // fallback: crisp IEP, no morph
+    const morph = interp;
+    out.setAttribute("d", morph(0));
+    out.style.opacity = "1";
+    if (crmReduce.matches) { out.setAttribute("d", morph(1)); return; } // static, no loop
+
+    const DELAY = 700, MORPH = 1050, HOLD = 850;
+    let running = false;
+    const run = (a: number, b: number, done: () => void) => {
+      const t0 = performance.now();
+      const frame = (now: number) => {
+        const m = Math.min((now - t0) / MORPH, 1);
+        out.setAttribute("d", morph(a + (b - a) * ease(m)));
+        if (m < 1) requestAnimationFrame(frame);
+        else window.setTimeout(done, HOLD);
+      };
+      requestAnimationFrame(frame);
+    };
+    const toIep = () => run(0, 1, toSf);
+    const toSf = () => run(1, 0, toIep);
+
+    new IntersectionObserver((es, obs) => {
+      for (const e of es) {
+        if (e.isIntersecting && !running) {
+          running = true;
+          obs.disconnect();
+          window.setTimeout(toIep, DELAY);
+        }
+      }
+    }, { threshold: 0.4 }).observe(comp);
+  });
+
+  // "Design is never done": measure the ∞ path so the moving segment (60% of the
+  // loop) and its dashoffset animation are exact and seamless.
+  document.querySelectorAll<SVGSVGElement>("[data-nd-loop]").forEach((svg) => {
+    const master = svg.querySelector<SVGPathElement>(".nd-master");
+    if (!master) return;
+    const len = master.getTotalLength();
+    const dash = len * 0.6;
+    master.style.setProperty("--nd-len", String(len));
+    master.style.setProperty("--nd-dash", String(dash));
+    master.style.setProperty("--nd-gap", String(len - dash));
+  });
+
+  // "zero to one": modeled on Allan Pope's "Dots Countdown". A field of faint
+  // multicolour dots drifts at random; a subset flies in (with per-dot random
+  // timing) to form 0, holds, scatters back to the drift, and re-forms as 1.
+  document.querySelectorAll<HTMLCanvasElement>("[data-dotloop]").forEach((canvas) => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const CHARS = ["0", "1"];
+    // shades around the brand blue (#1e54e8 / accent-navy / accent-ink)
+    const COLORS = ["30,84,232", "91,140,255", "60,110,245", "22,63,176"];
+    const R = 2.4, GAP = 7;              // dot radius + sampling grid (dot spacing)
+    const FORM_HOLD = 4200, SCATTER_GAP = 1600; // hold formed, then drift, before the next
+    const rand = (a: number, b: number) => Math.random() * (b - a) + a;
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+    let W = 0, H = 0, dpr = 1;
+    const oc = document.createElement("canvas");
+    const octx = oc.getContext("2d")!;
+    // sample a glyph on a regular grid -> [x,y] dot targets, centered
+    const coordsFor = (ch: string): number[][] => {
+      octx.clearRect(0, 0, W, H);
+      octx.fillStyle = "#fff"; octx.textAlign = "center"; octx.textBaseline = "middle";
+      octx.font = `900 ${Math.round(H * 0.9)}px "Hanken Grotesk", "Lato", system-ui, sans-serif`;
+      octx.fillText(ch, W / 2, H / 2 + H * 0.03);
+      const d = octx.getImageData(0, 0, W, H).data;
+      const pts: number[][] = [];
+      for (let y = 0; y < H; y += GAP)
+        for (let x = 0; x < W; x += GAP)
+          if (d[(y * W + x) * 4 + 3] > 128) pts.push([x, y]);
+      return pts;
+    };
+
+    type D = {
+      x: number; y: number; alpha: number; color: string; drift: boolean;
+      sx: number; sy: number; sa: number; tx: number; ty: number; ta: number; t0: number; dur: number;
+    };
+    let dots: D[] = [];
+    let coords: number[][][] = [];
+    const tween = (d: D, tx: number, ty: number, ta: number, dur: number, now: number) => {
+      d.sx = d.x; d.sy = d.y; d.sa = d.alpha; d.tx = tx; d.ty = ty; d.ta = ta; d.t0 = now; d.dur = dur;
+    };
+    const drift = (d: D, now: number) => { tween(d, rand(0, W), rand(0, H), 0.28, rand(2600, 4200), now); d.drift = true; };
+
+    const build = () => {
+      const rect = canvas.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = Math.round(rect.width); H = Math.round(rect.height);
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      oc.width = W; oc.height = H;
+      coords = CHARS.map(coordsFor);
+      const maxN = Math.max(1, ...coords.map((c) => c.length));
+      const total = maxN + Math.round(maxN * 0.55); // number dots + ambient drifters
+      if (dots.length !== total) {
+        const now = performance.now();
+        dots = Array.from({ length: total }, () => {
+          const x = rand(0, W), y = rand(0, H);
+          const d: D = { x, y, alpha: 0.28, color: COLORS[Math.floor(rand(0, COLORS.length))], drift: true, sx: x, sy: y, sa: 0.28, tx: x, ty: y, ta: 0.28, t0: now, dur: 1 };
+          drift(d, now); return d;
+        });
+      }
+    };
+    build();
+
+    if (reduce) { // static: just show the formed "1"
+      const c = coords[1] || [];
+      ctx.clearRect(0, 0, W, H);
+      for (let i = 0; i < dots.length; i++) {
+        const p = c[i]; if (!p) continue;
+        ctx.beginPath(); ctx.arc(p[0], p[1], R, 0, 6.2832); ctx.fillStyle = `rgba(${dots[i].color},1)`; ctx.fill();
+      }
+      return;
+    }
+
+    let idx = 0, timer = 0, running = false;
+    const form = (now: number) => {
+      const c = coords[idx];
+      for (let i = 0; i < dots.length; i++) {
+        if (i < c.length) { tween(dots[i], c[i][0], c[i][1], 1, rand(1300, 2300), now); dots[i].drift = false; }
+        else if (!dots[i].drift) drift(dots[i], now);
+      }
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => scatter(performance.now()), FORM_HOLD);
+    };
+    const scatter = (now: number) => {
+      for (const d of dots) drift(d, now);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => { idx = (idx + 1) % CHARS.length; form(performance.now()); }, SCATTER_GAP);
+    };
+
+    const loop = (now: number) => {
+      ctx.clearRect(0, 0, W, H);
+      for (const d of dots) {
+        const k = ease(Math.min((now - d.t0) / d.dur, 1));
+        d.x = d.sx + (d.tx - d.sx) * k;
+        d.y = d.sy + (d.ty - d.sy) * k;
+        d.alpha = d.sa + (d.ta - d.sa) * k;
+        if (k >= 1 && d.drift) drift(d, now); // ambient dots keep wandering
+        ctx.beginPath(); ctx.arc(d.x, d.y, R, 0, 6.2832);
+        ctx.fillStyle = `rgba(${d.color},${d.alpha.toFixed(3)})`; ctx.fill();
+      }
+      requestAnimationFrame(loop);
+    };
+
+    new IntersectionObserver((es, obs) => {
+      for (const e of es)
+        if (e.isIntersecting && !running) {
+          running = true; obs.disconnect();
+          requestAnimationFrame(loop);
+          form(performance.now());
+        }
+    }, { threshold: 0.3 }).observe(canvas);
+    window.addEventListener("resize", build);
+  });
+
+  // "De-escalation by design": the story timeline. Question + alert route to
+  // support; support loads each content resource (drawing a connector into it),
+  // scans back and forth through them a few times ("processing"), then replies.
+  document.querySelectorAll<HTMLElement>(".comp-deesc").forEach((comp) => {
+    const q = comp.querySelector<HTMLElement>(".de-question");
+    const a = comp.querySelector<HTMLElement>(".de-ask");
+    const support = comp.querySelector<HTMLElement>(".de-support");
+    const wires = Array.from(comp.querySelectorAll<SVGElement>(".de-wire, .de-arrow"));
+    const steps = Array.from(comp.querySelectorAll<HTMLElement>(".de-step"));
+    const segs = Array.from(comp.querySelectorAll<HTMLElement>(".de-seg"));
+    if (!q || !a || !support || steps.length < 5) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      [q, a, support].forEach((e) => e.classList.add("on"));
+      wires.forEach((w) => w.classList.add("on"));
+      steps.forEach((s) => s.classList.add("loaded"));
+      segs.forEach((s) => s.classList.add("drawn"));
+      return;
+    }
+
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const reset = () => {
+      [q, a, support].forEach((e) => e.classList.remove("on", "working"));
+      wires.forEach((w) => w.classList.remove("on"));
+      steps.forEach((s) => s.classList.remove("loaded", "scan"));
+      segs.forEach((s) => s.classList.remove("drawn"));
+    };
+
+    let running = false;
+    const play = async () => {
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        reset();
+        await wait(500);
+        q.classList.add("on"); await wait(350);
+        a.classList.add("on"); await wait(600);
+        wires.forEach((w) => w.classList.add("on")); await wait(850);
+        support.classList.add("on"); await wait(650);
+        // load all five, drawing the connector into each
+        for (let i = 0; i < steps.length; i++) {
+          if (i > 0) segs[i - 1].classList.add("drawn");
+          steps[i].classList.add("loaded");
+          await wait(480);
+        }
+        await wait(350);
+        // process: sweep through all five, each growing a bit, a few times
+        for (let pass = 0; pass < 3; pass++) {
+          for (let i = 0; i < steps.length; i++) {
+            steps[i].classList.add("scan");
+            await wait(130);
+            steps[i].classList.remove("scan");
+          }
+        }
+        await wait(2600);
+      }
+    };
+
+    new IntersectionObserver((es, obs) => {
+      for (const e of es)
+        if (e.isIntersecting && !running) { running = true; obs.disconnect(); play(); }
+    }, { threshold: 0.3 }).observe(comp);
+  });
+</script>
+
+<style is:global>
+  /* inlined grandpa svg: size like the img it replaced, and blink. The blink
+     squishes the .gp-eyes group (whites + pupils) shut toward its center. */
+  .gp-svg svg { width: 100%; height: auto; display: block; }
+  .gp-eyes {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: gp-blink 4.2s ease-in-out infinite;
+  }
+  @keyframes gp-blink {
+    0%, 93%, 100% { transform: scaleY(1); }
+    95.5% { transform: scaleY(0.08); }
+    98% { transform: scaleY(1); }
+  }
+  /* pupils stay locked on the cloud (up and to his left) with a slow
+     micro-drift, like he is tracking it as it hovers */
+  .gp-pupils {
+    animation: gp-gaze 7s ease-in-out infinite;
+  }
+  @keyframes gp-gaze {
+    0%, 100% { transform: translate(-1.5px, -1px); }
+    28% { transform: translate(-2.5px, -2px); }
+    52% { transform: translate(-1px, -0.5px); }
+    76% { transform: translate(-2px, -1.5px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gp-eyes, .gp-pupils { animation: none; }
+  }
+
+  /* inlined capability map: redlines are spec annotations, drawn like a spec
+     pass. Per group (staggered via --rd, set in the file): the bracket fades
+     in at the measured element, the line grows out of the bracket toward the
+     number, and the numbered marker pops when the line arrives. */
+  .capmap-svg svg, .redlining-svg svg { width: 100%; height: auto; display: block; }
+  .capmap-svg .rl-line { transform-box: fill-box; }
+  .capmap-svg .rl-from-right { transform-origin: right center; }
+  .capmap-svg .rl-from-left { transform-origin: left center; }
+  .capmap-svg .rl-circle, .capmap-svg .rl-num { transform-box: fill-box; transform-origin: center; }
+  html.js .comp-capmap:not(.is-in) [id^="redline_"] { opacity: 0; }
+  .comp-capmap.is-in [id^="redline_"] { opacity: 1; }
+  .comp-capmap.is-in .rl-bracket { animation: rl-fade 0.3s var(--ease) var(--rd, 0s) backwards; }
+  .comp-capmap.is-in .rl-line { animation: rl-grow 0.5s var(--ease) calc(var(--rd, 0s) + 0.15s) backwards; }
+  .comp-capmap.is-in .rl-circle,
+  .comp-capmap.is-in .rl-num { animation: rl-pop 0.35s var(--ease) calc(var(--rd, 0s) + 0.6s) backwards; }
+  @keyframes rl-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes rl-grow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  @keyframes rl-pop {
+    from { opacity: 0; transform: scale(0.5); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .comp-capmap:not(.is-in) [id^="redline_"] { opacity: 1; }
+    .comp-capmap.is-in .rl-bracket,
+    .comp-capmap.is-in .rl-line,
+    .comp-capmap.is-in .rl-circle,
+    .comp-capmap.is-in .rl-num { animation: none; }
+  }
+
+  /* implementation redlining: same spec-pass draw-in. Per group (staggered
+     via --rd in the file): the dot lands on the card, the line grows from
+     the dot toward the chip, and the numbered chip pops when it arrives. */
+  .redlining-svg .rl2-line { transform-box: fill-box; }
+  .redlining-svg .rl2-from-right { transform-origin: right center; }
+  .redlining-svg .rl2-from-left { transform-origin: left center; }
+  .redlining-svg .rl2-from-bottom { transform-origin: center bottom; }
+  .redlining-svg .rl2-chip { transform-box: fill-box; transform-origin: center; }
+  html.js .comp-redlining:not(.is-in) [id^="Redline_"] { opacity: 0; }
+  .comp-redlining.is-in [id^="Redline_"] { opacity: 1; }
+  .comp-redlining.is-in .rl2-dot { animation: rl-fade 0.3s var(--ease) var(--rd, 0s) backwards; }
+  .comp-redlining.is-in .rl2-line { animation: rl-grow 0.5s var(--ease) calc(var(--rd, 0s) + 0.15s) backwards; }
+  .comp-redlining.is-in .rl2-from-bottom { animation-name: rl-grow-y; }
+  .comp-redlining.is-in .rl2-chip { animation: rl-pop 0.35s var(--ease) calc(var(--rd, 0s) + 0.6s) backwards; }
+  @keyframes rl-grow-y {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .comp-redlining:not(.is-in) [id^="Redline_"] { opacity: 1; }
+    .comp-redlining.is-in .rl2-dot,
+    .comp-redlining.is-in .rl2-line,
+    .comp-redlining.is-in .rl2-chip { animation: none; }
+  }
+
+  /* project goals entrance: the comp root carries data-reveal only as the
+     .is-in trigger; the root itself stays visible and the pieces stage in.
+     Order: sfdc laptop -> sfdc logo pops out -> arrow shoots out -> iep
+     laptop lands -> iep logo pops out. */
+  html.js .comp-goals[data-reveal] { opacity: 1; transform: none; transition: none; }
+  .comp-goals .g-in { transition: transform 0.7s var(--ease), opacity 0.7s var(--ease); }
+  html.js .comp-goals:not(.is-in) .g-laptop-sfdc { opacity: 0; transform: translateY(28px); }
+  html.js .comp-goals:not(.is-in) .g-logo-sfdc { opacity: 0; transform: translateY(80%); }
+  html.js .comp-goals:not(.is-in) .g-arrow { opacity: 0; transform: translateX(-70%) scaleX(0.4); transform-origin: left center; }
+  html.js .comp-goals:not(.is-in) .g-laptop-iep { opacity: 0; transform: translateX(56px); }
+  html.js .comp-goals:not(.is-in) .g-logo-iep { opacity: 0; transform: translateY(80%); }
+  .comp-goals.is-in .g-laptop-sfdc { transition-delay: 0.1s; }
+  .comp-goals.is-in .g-logo-sfdc { transition-delay: 0.65s; }
+  .comp-goals.is-in .g-arrow { transition-delay: 1.15s; }
+  .comp-goals.is-in .g-laptop-iep { transition-delay: 1.6s; }
+  .comp-goals.is-in .g-logo-iep { transition-delay: 2.15s; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .comp-goals:not(.is-in) .g-in { opacity: 1; transform: none; }
+    .comp-goals .g-in { transition: none; }
+  }
+
+  /* research tiles: root reveal is only the trigger; tiles animate in one by
+     one (animation, not transition, so the zoom transitions stay instant) */
+  html.js .comp-research[data-reveal] { opacity: 1; transform: none; transition: none; }
+  html.js .comp-research:not(.is-in) .research-tile { opacity: 0; }
+  /* backwards fill only: it covers the stagger delay, then releases the
+     transform so hover and zoom keep working after the entrance */
+  .comp-research.is-in .research-tile { animation: rt-in 0.6s var(--ease) var(--d, 0s) backwards; }
+  @keyframes rt-in {
+    from { opacity: 0; transform: translateY(26px); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .comp-research:not(.is-in) .research-tile { opacity: 1; }
+    .comp-research.is-in .research-tile { animation: none; }
+  }
+
+  /* capability framework: rows drop in top to bottom (grey, blue, green),
+     starting after a hold like the personas fan */
+  html.js .comp-framework[data-reveal] { opacity: 1; transform: none; transition: none; }
+  html.js .comp-framework:not(.is-in) .fw-row { opacity: 0; }
+  .comp-framework.is-in .fw-row { animation: fw-in 0.6s var(--ease) var(--d, 0s) backwards; }
+  @keyframes fw-in {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .comp-framework:not(.is-in) .fw-row { opacity: 1; }
+    .comp-framework.is-in .fw-row { animation: none; }
+  }
+
+  /* conclusion doodles: the stars and arrow reveal with a hand-drawing wipe
+     instead of the standard fade. Their reveal wrappers go neutral and the
+     wipe runs on the parallax div (clip-path, so it never fights the float
+     or drift transforms). The arrow draws tail-to-head (right to left). */
+  html.js .cc-star1[data-reveal], html.js .cc-star2[data-reveal], html.js .cc-arrow[data-reveal] {
+    opacity: 1; transform: none; transition: none;
+  }
+  html.js .cc-star1:not(.is-in) [data-parallax],
+  html.js .cc-star2:not(.is-in) [data-parallax] { clip-path: inset(0 0 100% 0); }
+  html.js .cc-arrow:not(.is-in) [data-parallax] { clip-path: inset(0 0 0 100%); }
+  .cc-star1.is-in [data-parallax],
+  .cc-star2.is-in [data-parallax] { animation: doodle-draw-y 1.4s var(--ease) var(--reveal-delay, 0s) backwards; }
+  .cc-arrow.is-in [data-parallax] { animation: doodle-draw-x 1.8s var(--ease) var(--reveal-delay, 0s) backwards; }
+  @keyframes doodle-draw-y {
+    from { clip-path: inset(0 0 100% 0); }
+    to { clip-path: inset(0 0 0 0); }
+  }
+  @keyframes doodle-draw-x {
+    from { clip-path: inset(0 0 0 100%); }
+    to { clip-path: inset(0 0 0 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .cc-star1:not(.is-in) [data-parallax],
+    html.js .cc-star2:not(.is-in) [data-parallax],
+    html.js .cc-arrow:not(.is-in) [data-parallax] { clip-path: none; }
+    .cc-star1.is-in [data-parallax],
+    .cc-star2.is-in [data-parallax],
+    .cc-arrow.is-in [data-parallax] { animation: none; }
+  }
+
+  /* personas fan-out: stacked as one pile in the middle until the row
+     reveals (.is-in), then each circle glides to its resting spot */
+  html.js .comp-personas .personas-row:not(.is-in) .persona:nth-child(1) { transform: translateX(70%) rotate(-6deg); }
+  html.js .comp-personas .personas-row:not(.is-in) .persona:nth-child(2) { transform: rotate(2deg); }
+  html.js .comp-personas .personas-row:not(.is-in) .persona:nth-child(3) { transform: translateX(-70%) rotate(6deg); }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .comp-personas .personas-row:not(.is-in) .persona { transform: none; }
+  }
+
+  /* slide 3 arrows draw themselves from the icon toward the window. The wipe
+     runs in each arrow's own space; the img's flip carries the visual
+     direction, so tail-to-head is always correct.
+     arrow_02 tail is top-left (wipe L->R), arrow_01 tail is top-right (R->L). */
+  html.js .comp-workinto .wi-arrow[data-reveal] { opacity: 1; transform: none; transition: none; }
+  html.js .comp-workinto .wi-a02:not(.is-in) img { clip-path: inset(0 100% 0 0); }
+  html.js .comp-workinto .wi-a01:not(.is-in) img { clip-path: inset(0 0 0 100%); }
+  .comp-workinto .wi-a02.is-in img { animation: wi-draw-lr 0.85s var(--ease) var(--reveal-delay, 0s) backwards; }
+  .comp-workinto .wi-a01.is-in img { animation: wi-draw-rl 0.85s var(--ease) var(--reveal-delay, 0s) backwards; }
+  @keyframes wi-draw-lr {
+    from { clip-path: inset(0 100% 0 0); }
+    to { clip-path: inset(0 0 0 0); }
+  }
+  @keyframes wi-draw-rl {
+    from { clip-path: inset(0 0 0 100%); }
+    to { clip-path: inset(0 0 0 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .comp-workinto .wi-a01:not(.is-in) img,
+    html.js .comp-workinto .wi-a02:not(.is-in) img { clip-path: none; }
+    .comp-workinto .wi-a01.is-in img,
+    .comp-workinto .wi-a02.is-in img { animation: none; }
+  }
+
+  /* slide 2: the real gradient shape stays hidden until the code-built bars
+     have grown and merged, then cross-fades in over their exact footprint */
+  .bc-merged { opacity: 0; transition: opacity 0.5s var(--ease); }
+  .comp-vepchart.is-swapped .bc-merged { opacity: 1; }
+
+  /* slide 4: the export bakes in a gray panel rect; drop it so the diagram
+     sits straight on the page */
+  .ecosystem-svg rect[fill="#F0F4F6"] { display: none; }
+
+  /* an ecosystem that reads as connected. Dots travel out and back along
+     every spoke, the ring slowly orbits, and the nodes breathe. */
+  .eco-spoke { animation: eco-flow 3.2s ease-in-out infinite alternate; }
+  .eco-spoke:nth-of-type(2) { animation-duration: 4.1s; animation-delay: -1.2s; }
+  .eco-spoke:nth-of-type(3) { animation-duration: 3.6s; animation-delay: -2.1s; }
+  .eco-spoke:nth-of-type(4) { animation-duration: 4.6s; animation-delay: -0.7s; }
+  .eco-spoke:nth-of-type(5) { animation-duration: 3.9s; animation-delay: -2.8s; }
+  @keyframes eco-flow {
+    from { stroke-dashoffset: 0; }
+    to { stroke-dashoffset: -28.2; }
+  }
+  .eco-ring { animation: eco-orbit 26s linear infinite; }
+  @keyframes eco-orbit {
+    from { stroke-dashoffset: 0; }
+    to { stroke-dashoffset: -282; }
+  }
+  .eco-dot, .eco-logo { transform-box: fill-box; transform-origin: center; }
+  .eco-dot { animation: eco-pulse 2.6s ease-in-out infinite; }
+  .eco-dot:nth-of-type(2) { animation-delay: -0.5s; }
+  .eco-dot:nth-of-type(3) { animation-delay: -1s; }
+  .eco-dot:nth-of-type(4) { animation-delay: -1.5s; }
+  .eco-dot:nth-of-type(5) { animation-delay: -2s; }
+  @keyframes eco-pulse {
+    0%, 100% { transform: scale(0.72); opacity: 0.55; }
+    50% { transform: scale(1.25); opacity: 1; }
+  }
+  .eco-logo { animation: eco-breathe 5s ease-in-out infinite; }
+  .eco-logo-2 { animation-duration: 6.2s; animation-delay: -1.4s; }
+  .eco-logo-3 { animation-duration: 5.5s; animation-delay: -2.6s; }
+  .eco-logo-4 { animation-duration: 6.8s; animation-delay: -3.3s; }
+  .eco-logo-5 { animation-duration: 5.9s; animation-delay: -0.8s; }
+  @keyframes eco-breathe {
+    0%, 100% { transform: scale(0.94) translateY(4px); }
+    50% { transform: scale(1.07) translateY(-4px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .eco-spoke, .eco-ring, .eco-dot, .eco-logo { animation: none; }
+    .bc-merged { opacity: 1; }
+  }
+
+  /* panel deck arrows draw themselves toward VEP / across products, each
+     wiped from its own tail to its head */
+  html.js .comp-vepbreakdown .vb-arrow[data-reveal],
+  html.js .comp-platformmindset .pm-arrow[data-reveal] { opacity: 1; transform: none; transition: none; }
+  html.js .comp-vepbreakdown .vb-arr-a:not(.is-in) img,
+  html.js .comp-platformmindset .pm-arr-top:not(.is-in) img { clip-path: inset(0 100% 0 0); }
+  html.js .comp-vepbreakdown .vb-arr-d:not(.is-in) img,
+  html.js .comp-platformmindset .pm-arr-bot:not(.is-in) img { clip-path: inset(0 0 0 100%); }
+  html.js .comp-vepbreakdown .vb-arr-b:not(.is-in) img,
+  html.js .comp-vepbreakdown .vb-arr-c:not(.is-in) img { clip-path: inset(100% 0 0 0); }
+  .comp-vepbreakdown .vb-arr-a.is-in img,
+  .comp-platformmindset .pm-arr-top.is-in img { animation: wi-draw-lr 0.9s var(--ease) var(--reveal-delay, 0s) backwards; }
+  .comp-vepbreakdown .vb-arr-d.is-in img,
+  .comp-platformmindset .pm-arr-bot.is-in img { animation: wi-draw-rl 0.9s var(--ease) var(--reveal-delay, 0s) backwards; }
+  .comp-vepbreakdown .vb-arr-b.is-in img,
+  .comp-vepbreakdown .vb-arr-c.is-in img { animation: wi-draw-up 0.7s var(--ease) var(--reveal-delay, 0s) backwards; }
+  @keyframes wi-draw-up {
+    from { clip-path: inset(100% 0 0 0); }
+    to { clip-path: inset(0 0 0 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .comp-vepbreakdown .vb-arrow:not(.is-in) img,
+    html.js .comp-platformmindset .pm-arrow:not(.is-in) img { clip-path: none; }
+    .comp-vepbreakdown .vb-arrow.is-in img,
+    .comp-platformmindset .pm-arrow.is-in img { animation: none; }
+  }
+
+  /* cardflow: cards start stacked in the center (deck), then fan out to their
+     row spots one by one; the journey line draws in once they've landed */
+  .comp-cardflow .cf-card { transition-delay: 0.1s; }
+  html.js .comp-cardflow:not(.is-in) .cf-card-0 { transform: translateX(273%) translateY(6%) rotate(-6deg); }
+  html.js .comp-cardflow:not(.is-in) .cf-card-1 { transform: translateX(137%) translateY(3%) rotate(-3deg); }
+  html.js .comp-cardflow:not(.is-in) .cf-card-2 { transform: translateY(0) rotate(1deg); }
+  html.js .comp-cardflow:not(.is-in) .cf-card-3 { transform: translateX(-137%) translateY(3%) rotate(4deg); }
+  html.js .comp-cardflow:not(.is-in) .cf-card-4 { transform: translateX(-273%) translateY(6%) rotate(7deg); }
+  .comp-cardflow.is-in .cf-card-0 { transition-delay: 0.5s; }
+  .comp-cardflow.is-in .cf-card-1 { transition-delay: 0.65s; }
+  .comp-cardflow.is-in .cf-card-2 { transition-delay: 0.8s; }
+  .comp-cardflow.is-in .cf-card-3 { transition-delay: 0.95s; }
+  .comp-cardflow.is-in .cf-card-4 { transition-delay: 1.1s; }
+  .cf-line { transition: transform 0.9s var(--ease) 1.5s; }
+  .comp-cardflow.is-in .cf-line { transform: scaleX(1); }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .comp-cardflow:not(.is-in) .cf-card { transform: none; }
+    .cf-line { transition: none; transform: scaleX(1); }
+  }
+
+  /* archetypes fan-out: same as personas, the two cards stack then fly apart */
+  html.js .comp-archetypes2 .arch-row:not(.is-in) .arch-card:nth-child(1),
+  html.js .comp-duo .arch-row:not(.is-in) .arch-card:nth-child(1) { transform: translateX(50%) rotate(-5deg); }
+  html.js .comp-archetypes2 .arch-row:not(.is-in) .arch-card:nth-child(2),
+  html.js .comp-duo .arch-row:not(.is-in) .arch-card:nth-child(2) { transform: translateX(-50%) rotate(5deg); }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .comp-archetypes2 .arch-row:not(.is-in) .arch-card,
+    html.js .comp-duo .arch-row:not(.is-in) .arch-card { transform: none; }
+  }
+</style>
+
+<style>
+  .comp { position: relative; width: 100%; }
+  .comp img { display: block; width: 100%; height: auto; }
+  .pc { position: absolute; }
+
+  /* idle bobbing, offset rhythms so pieces never move in lockstep */
+  .float { animation: comp-float 6s ease-in-out infinite; }
+  .fl-b { animation-duration: 7.5s; animation-delay: -2.4s; }
+  .fl-c { animation-duration: 5.2s; animation-delay: -1.2s; }
+  @keyframes comp-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  /* the salesforce cloud gets a livelier wander: drifts on both axes with a
+     little tilt, like it is hovering just out of grandpa's reach */
+  .cloud-drift { animation: cloud-drift 7s ease-in-out infinite; }
+  @keyframes cloud-drift {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    22%  { transform: translate(9px, -14px) rotate(-4deg); }
+    46%  { transform: translate(-8px, -22px) rotate(3deg); }
+    68%  { transform: translate(-14px, -6px) rotate(-2deg); }
+    86%  { transform: translate(6px, 8px) rotate(4deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+  }
+
+  /* grandpa trembles with rage in short bursts: feet planted (origin at the
+     bottom), a quick jitter, then he settles until the next flare-up */
+  .grandpa-shake {
+    transform-origin: 50% 100%;
+    animation: grandpa-shake 4.5s ease-in-out infinite;
+  }
+  @keyframes grandpa-shake {
+    0%, 12% { transform: rotate(0deg) translateX(0); }
+    14% { transform: rotate(-1.2deg) translateX(-2px); }
+    16% { transform: rotate(1.1deg) translateX(2px); }
+    18% { transform: rotate(-1deg) translateX(-2px); }
+    20% { transform: rotate(0.9deg) translateX(2px); }
+    22% { transform: rotate(-0.7deg) translateX(-1px); }
+    24% { transform: rotate(0.5deg) translateX(1px); }
+    26%, 100% { transform: rotate(0deg) translateX(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .float, .cloud-drift, .grandpa-shake { animation: none; }
+  }
+
+  /* 01 · grandpa vs the Salesforce cloud. The grandpa svg fills the comp and
+     sits flush on the scene bottom; the cloud floats in the svg's empty
+     top-left corner (where its static twin is hidden). */
+  .comp-grandpa img { vertical-align: bottom; }
+  .pc-cloud { left: 13%; top: 0; width: 29%; z-index: 2; }
+
+  /* 02 · personas: three overlapping circles, no card. They arrive as one
+     stacked pile, then fan out to their resting spots once the row reveals. */
+  .personas-head {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.2rem, 1rem + 0.9vw, 1.7rem); letter-spacing: -0.01em;
+    color: var(--ink); text-align: center;
+    margin-bottom: clamp(var(--s-5), 3.5vh, var(--s-8));
+  }
+  .personas-row { display: flex; justify-content: center; align-items: flex-start; }
+  .persona { position: relative; width: 40%; flex: none; margin: 0; }
+  .persona + .persona { margin-left: -12%; }
+  .persona:nth-child(1) { z-index: 3; }
+  .persona:nth-child(2) { z-index: 2; }
+  .persona:nth-child(3) { z-index: 1; }
+  .persona figcaption {
+    margin-top: var(--s-3); text-align: center;
+    font-style: italic; font-size: var(--t-small); color: var(--ink-soft);
+  }
+  /* fan-out entrance: stacked state lives in the global block below (html.js
+     prefixed selectors do not survive Astro's style scoping). The long delay
+     holds the pile together for a beat before it fans out. */
+  .persona { transition: transform 0.9s var(--ease) 0.9s; }
+  /* hover: lift, grow, tilt, and come to the front */
+  .persona-hov { display: block; transition: transform 0.3s var(--ease); }
+  .persona:hover { z-index: 9; }
+  .persona:hover .persona-hov { transform: translateY(-14px) scale(1.08) rotate(2deg); }
+  @media (prefers-reduced-motion: reduce) {
+    .persona, .persona-hov { transition: none; }
+  }
+
+  /* 03 · project goals: sfdc -> iep. Logos overlap the laptop screens like
+     they popped out of them; the entrance is staged in the global block. */
+  .comp-goals {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: end; gap: clamp(var(--s-3), 2vw, var(--s-5));
+  }
+  .goal-side { display: grid; justify-items: center; }
+  .goal-logo { width: 44%; position: relative; z-index: 2; margin-bottom: -9%; }
+  .goal-side:last-child .goal-logo { width: 32%; margin-bottom: -7%; }
+  .goal-laptop { width: 100%; position: relative; z-index: 1; }
+  .goal-arrow { width: clamp(4rem, 9vw, 8rem); align-self: center; margin-bottom: 6%; }
+  .g-in { display: block; }
+
+  /* livelier idle motion on the logos: a bigger bob with a little sway */
+  .comp-goals .goal-logo img { animation: logo-bob 5s ease-in-out infinite; }
+  .comp-goals .goal-side:last-child .goal-logo img { animation-duration: 6.2s; animation-delay: -2.2s; }
+  @keyframes logo-bob {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    30% { transform: translateY(-13px) rotate(-4deg); }
+    55% { transform: translateY(-3px) rotate(2deg); }
+    78% { transform: translateY(-9px) rotate(-2deg); }
+  }
+  /* once the entrance finishes, the arrow keeps nudging left to right,
+     pushing toward IEP (starts 3s after the section reveals) */
+  .comp-goals.is-in .g-arrow img { animation: arrow-nudge 2.6s ease-in-out 3s infinite; }
+  @keyframes arrow-nudge {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(9px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .comp-goals .goal-logo img, .comp-goals.is-in .g-arrow img { animation: none; }
+  }
+
+  /* 04 · research: clean 2x2 grid, no card. Click a tile to zoom it over
+     the whole grid (it scales out from its own corner); click again to close. */
+  .comp-research {
+    position: relative;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(var(--s-3), 1.5vw, var(--s-5));
+  }
+  .research-tile {
+    margin: 0; border-radius: var(--radius-s); overflow: clip;
+    border: 1px solid var(--line); background: #fff; box-shadow: var(--shadow);
+    aspect-ratio: 16 / 10; cursor: zoom-in;
+    transition: transform 0.55s var(--ease), box-shadow 0.55s var(--ease);
+  }
+  .research-tile img { width: 100%; height: 100%; object-fit: cover; }
+  .rt-1 { transform-origin: top left; }
+  .rt-2 { transform-origin: top right; }
+  .rt-3 { transform-origin: bottom left; }
+  .rt-4 { transform-origin: bottom right; }
+  /* the journey-map key svg sits on a dark navy card, contained (not
+     cropped) so it matches the other tiles' dimensions */
+  .rt-4 {
+    background: color-mix(in srgb, var(--navy) 45%, #101418);
+    border-color: color-mix(in srgb, var(--navy) 30%, #101418);
+  }
+  .rt-4 img { object-fit: contain; padding: clamp(var(--s-3), 1.5vw, var(--s-5)); }
+  .research-tile:not(.is-zoom):hover { transform: scale(1.03); box-shadow: var(--shadow-lift); }
+  .research-tile.is-zoom {
+    transform: scale(2.04); z-index: 6; cursor: zoom-out;
+    box-shadow: var(--shadow-lift);
+  }
+
+  /* 08 · AI-powered support: one gray canvas (like the deck) zoomed hard
+     into the browser's top-right corner. The frame's rounded corner sits
+     inset with a gray gap at the top and right; the rest bleeds off the
+     left and bottom, cropping the support-request card mid-list. */
+  .assist-crop {
+    aspect-ratio: 5 / 4; overflow: clip; position: relative;
+    border-radius: var(--radius); background: #fff;
+    box-shadow: var(--shadow);
+  }
+  .assist-crop img {
+    position: absolute; top: 7.8%; right: 7.4%;
+    width: 237%; max-width: none; height: auto;
+  }
+
+  /* 10 · implementation redlining: bare, centered, sized by the column */
+  .comp-redlining { max-width: 40rem; margin-inline: auto; }
+
+  /* 12 · impact deck, matching the reference gif: straight cards, each one
+     behind peeking slightly lower and a touch smaller. The shuffle lifts the
+     top card straight up, then settles it down onto the back of the pile. */
+  .comp-deck { padding: 14% 2% 5%; }
+  .deck-stack { position: relative; aspect-ratio: 1366 / 768; }
+  .deck-card {
+    position: absolute; inset: 0; margin: 0;
+    border-radius: var(--radius-s); overflow: clip;
+    border: 1px solid var(--line); background: #fff;
+    box-shadow: 0 18px 44px -22px rgba(17, 21, 28, 0.4);
+    transform: translateY(calc(var(--depth, 0) * 14px)) scale(calc(1 - var(--depth, 0) * 0.025));
+    transition: transform 0.6s var(--ease);
+    will-change: transform;
+  }
+  .deck-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .deck-card.is-out {
+    transform: translateY(-46%) scale(0.99);
+  }
+  /* hovering pauses the shuffle; grow the screen you paused on */
+  .deck-card { transition: transform 0.6s var(--ease), box-shadow 0.6s var(--ease); }
+  .deck-stack:hover .deck-card.is-front:not(.is-out) {
+    transform: translateY(0) scale(1.07);
+    box-shadow: 0 26px 60px -24px rgba(17, 21, 28, 0.5);
+  }
+
+  /* 05 · capability framework, built entirely in code */
+  .comp-framework {
+    display: grid; gap: clamp(var(--s-6), 5vh, var(--s-10));
+    justify-items: center; padding: clamp(var(--s-5), 4vh, var(--s-8)) 0;
+  }
+  .fw-row { display: grid; gap: var(--s-3); justify-items: center; }
+  .fw-pill {
+    display: inline-block;
+    padding: 0.3em 1.1em; border-radius: 10px;
+    font-family: var(--font-sans); font-weight: 800;
+    font-size: clamp(1.05rem, 0.9rem + 0.9vw, 1.5rem);
+    letter-spacing: 0.04em; text-transform: uppercase; color: #fff;
+    box-shadow: 0 10px 26px -14px rgba(17, 21, 28, 0.45);
+  }
+  .fw-gray { background: #90959c; }
+  .fw-blue { background: #2b78d4; }
+  .fw-green { background: #4aa32a; }
+  .fw-cap { font-style: italic; font-size: var(--t-small); color: var(--ink-soft); text-align: center; }
+
+  /* 12 · conclusion collage (positions match the example layout) */
+  .comp-conclusion { aspect-ratio: 5 / 4; }
+  .cc-table { left: 20%; top: 5%; width: 50%; z-index: 1; }
+  .cc-expert2 { left: 62%; top: 7%; width: 16%; z-index: 3; }
+  .cc-ctas { left: 56%; top: 46%; width: 32%; z-index: 3; }
+  .cc-expert1 { left: 14%; top: 60%; width: 16%; z-index: 2; }
+  .cc-star1 { left: 8%; top: 5%; width: 7%; }
+  .cc-star2 { left: 88%; top: 82%; width: 7%; }
+  .cc-arrow { left: 3%; top: 80%; width: 21%; }
+
+  /* panel deck · hello: circular portrait inside a thick accent ring */
+  .comp-hijared { display: grid; place-items: center; }
+  .hi-portrait { margin: 0; width: min(34vh, 20rem); }
+  .hi-portrait img {
+    display: block; width: 100%; aspect-ratio: 1; object-fit: cover;
+    border-radius: 50%;
+    border: clamp(7px, 0.9vw, 13px) solid var(--accent);
+  }
+
+  /* panel deck · slide 1: business units feeding into VEP */
+  /* shorter than the source layout so the headline, the art, and an open
+     "Additional info" accordion all sit on one screen without crowding */
+  .comp-vepbreakdown {
+    position: relative; aspect-ratio: 16 / 8;
+    max-width: 92%; margin-inline: auto;
+  }
+  .comp-vepbreakdown img { display: block; width: 100%; height: auto; }
+  .vb-vep { position: absolute; left: 39.5%; top: 15%; width: 21%; z-index: 2; }
+  .vb-arrow { position: absolute; z-index: 3; }
+  .vb-arr-a { left: 19%; top: 32%; width: 19%; }
+  .vb-arr-b { left: 40%; top: 37%; width: 5%; }
+  .vb-arr-c { left: 56%; top: 37%; width: 6.5%; }
+  .vb-arr-d { left: 65%; top: 29%; width: 17%; }
+  .vb-cards {
+    position: absolute; left: 2%; right: 2%; bottom: 4%;
+    display: flex; gap: 2.4%; z-index: 1;
+  }
+  .vb-card {
+    flex: 1; display: grid; place-items: center;
+    aspect-ratio: 16 / 10; padding: 0;
+    background: #fff; border: 2px solid var(--navy);
+    border-radius: 14px;
+  }
+  /* Equal bounding-box heights read unevenly, so each lockup carries an
+     optical scale (--s). Width is capped at the card edge; the very wide
+     lockups clamp there rather than overflow. */
+  .vb-card img {
+    width: 84%; height: calc(20% * var(--s, 1)); object-fit: contain;
+  }
+
+  /* panel deck · slide 2: BU bars grow, then merge into one */
+  .comp-vepchart { position: relative; }
+  .vepchart-svg svg { width: 100%; height: auto; display: block; }
+  .bc-bars {
+    position: absolute; left: 35.5%; width: 56.44%;
+    bottom: 18.51%; height: 73.43%;
+    display: flex; align-items: flex-end; gap: 1.4%;
+    transition: gap 0.6s var(--ease), opacity 0.5s var(--ease);
+  }
+  .bc-bar {
+    flex: 1; height: 0; border-radius: 10px 10px 0 0;
+    background: linear-gradient(180deg, #2f6fe4 0%, #1b4fc4 100%);
+    transition: height 0.6s var(--ease), border-radius 0.5s var(--ease);
+  }
+  .bc-bar.is-grown { height: var(--h); }
+  .comp-vepchart.is-merged .bc-bars { gap: 0; }
+  .comp-vepchart.is-merged .bc-bar { height: 100%; border-radius: 0; }
+  .comp-vepchart.is-merged .bc-bar:first-child { border-top-left-radius: 8%; }
+  .comp-vepchart.is-merged .bc-bar:last-child { border-top-right-radius: 8%; }
+  .comp-vepchart.is-swapped .bc-bars { opacity: 0; }
+
+  /* panel deck · slide 4: the ecosystem, its own gray panel baked in */
+  .comp-ecosystem { position: relative; }
+  .ecosystem-svg svg { width: 100%; height: auto; display: block; }
+
+  /* panel deck · slide 3: one pattern, two products */
+  .comp-platformmindset { position: relative; aspect-ratio: 5 / 4; }
+  .comp-platformmindset img { display: block; width: 100%; height: auto; }
+  .pm-chat { position: absolute; filter: drop-shadow(0 18px 40px rgba(17, 21, 28, 0.16)); }
+  .pm-tt { left: 8%; top: 24%; width: 38%; z-index: 1; }
+  .pm-ck { left: 52%; top: 12%; width: 38%; z-index: 2; }
+  .pm-badge { position: absolute; z-index: 4; }
+  .pm-tt-icon { left: 2%; top: 17%; width: 17%; }
+  .pm-ck-icon { left: 46%; top: 5%; width: 17%; }
+  .pm-arrow { position: absolute; z-index: 5; }
+  .pm-arr-top { left: 30%; top: 2%; width: 15%; }
+  .pm-arr-bot { left: 58%; bottom: 2%; width: 15%; }
+
+  /* ai-native · slide 2: two archetype circles with tag pills */
+  /* max-width scales the whole thing down uniformly, so the circle-to-tag
+     ratio stays exactly as measured from the example */
+  .comp-archetypes2 {
+    padding: clamp(var(--s-5), 4vh, var(--s-10)) 0;
+    max-width: 84%; margin-inline: auto;
+  }
+  /* proportions traced from 02_archetype_example.png: the circles sit edge to
+     edge (their transparent padding keeps them visually apart) and each tag
+     pill is ~53% of the photo's width, overlapping its lower edge. */
+  .arch-row { display: flex; justify-content: center; gap: 0; }
+  .arch-card { position: relative; width: 50%; max-width: none; flex: none; margin: 0; transition: transform 0.9s var(--ease) 0.9s; }
+  .arch-card:nth-child(1) { z-index: 2; }
+  /* the photos carry ~11% transparent padding on every side; zooming past it
+     is what makes the people bigger without the circles colliding */
+  .arch-zoom { display: block; transform: scale(1.25); }
+  /* NOTE: this must out-specify `.comp img { width: 100% }` above, or the
+     pill silently renders full-card-width no matter what is set here.
+     Ratio traced from the example: the pill is 202px under a 299px circle,
+     i.e. 67.6% of the circle, sitting 96.7% of the way down it. */
+  .comp-archetypes2 .arch-tag {
+    position: absolute; left: 50%; bottom: -4%; transform: translateX(-50%);
+    width: 66%; height: auto; z-index: 3;
+    filter: drop-shadow(0 8px 18px rgba(17, 21, 28, 0.18));
+  }
+
+  /* concierge · slide 6: two archetype circles. These photos are already
+     tight circular crops, so no zoom, and a slightly smaller tag ratio. */
+  .comp-duo { padding: clamp(var(--s-5), 4vh, var(--s-10)) 0; max-width: 90%; margin-inline: auto; }
+  .comp-duo .arch-row { gap: clamp(var(--s-4), 3vw, var(--s-8)); }
+  .comp-duo .arch-zoom { transform: none; }
+  .comp-duo .arch-tag {
+    position: absolute; left: 50%; bottom: -4%; transform: translateX(-50%);
+    width: 62%; height: auto; z-index: 3;
+    filter: drop-shadow(0 8px 18px rgba(17, 21, 28, 0.18));
+  }
+
+  /* concierge · slide 2: activate-experts collage (positions from example) */
+  .comp-activate { position: relative; aspect-ratio: 1045 / 824; }
+  .comp-activate img { display: block; width: 100%; height: auto; }
+  /* positions measured pixel-for-pixel from 02_activate-experts_example-layout.png */
+  .ac-blob { position: absolute; left: 15.4%; top: 12.4%; width: 57.2%; margin: 0; z-index: 1; }
+  .ac-card { left: 61.4%; top: 17.9%; width: 32%; z-index: 4; }
+  .ac-tax { left: 16.1%; top: 7.9%; width: 10.3%; z-index: 3; }
+  .ac-check { left: 14.5%; top: 28.8%; width: 10%; z-index: 3; }
+  .ac-iep { left: 49.5%; top: 73.8%; width: 14.3%; z-index: 5; }
+  .ac-cal { left: 66.9%; top: 72%; width: 9.6%; z-index: 3; }
+  .ac-notif { left: 6.6%; top: 68.4%; width: 33.3%; z-index: 4; }
+
+  /* concierge · slide 4: the wide E2E flow, fit to the figure width */
+  .comp-flow { width: 100%; }
+  .flow-svg svg { width: 100%; height: auto; display: block; }
+
+  /* concierge · slide 4 (flowdeck): the diagram's real nodes start piled in a
+     stack, fan out to their true positions in reading order, then the detailed
+     SVG resolves in on top and the placeholders retire. */
+  .comp-flowdeck { position: relative; aspect-ratio: 6288 / 2327; }
+  /* the diagram's own outer frame — light-blue fill + blue stroke — drawn from
+     the start so the stack and fan-out happen inside it; the resolved SVG
+     overlays an identical frame, so the swap is seamless. geometry matches the
+     container path in 04_e2e-concierge-flow.svg (0.6%-99.4% x, 1.7%-98.3% y). */
+  .comp-flowdeck .fd-frame {
+    position: absolute;
+    left: 0.6%; top: 1.7%; width: 98.8%; height: 96.6%;
+    box-sizing: border-box;
+    background: #f4f9ff;
+    border: 2.5px solid #3492ef;
+    border-radius: clamp(8px, 0.8vw, 14px);
+  }
+  .comp-flowdeck .fd-final {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: contain; opacity: 0; pointer-events: none;
+    transition: opacity 0.7s var(--ease);
+  }
+  .comp-flowdeck .fd-nodes { position: absolute; inset: 0; }
+  .fd-node {
+    position: absolute;
+    box-sizing: border-box;
+    /* stacked start: real position offset back to the shared anchor */
+    left: calc((var(--l) + var(--dx)) * 1%);
+    top: calc((var(--t) + var(--dy)) * 1%);
+    width: calc(var(--w) * 1%);
+    height: calc(var(--h) * 1%);
+    background: #fff;
+    border: 1.5px solid #a9bce4;
+    border-radius: 4px;
+    box-shadow: 0 6px 14px -8px rgba(17, 21, 28, 0.35);
+    /* stacked look: each card offset into a neat diagonal pile + slight jitter */
+    transform: translate(calc(var(--i) * 1.4px), calc(var(--i) * -0.9px))
+      scale(0.82) rotate(var(--r));
+    transition: left 0.8s var(--ease), top 0.8s var(--ease),
+      transform 0.8s var(--ease);
+  }
+  .fd-r { border-radius: 50%; background: #d3e2fb; border-color: #7ba7e8; }
+  .fd-d {
+    background: #adffe8; border: none; box-shadow: none;
+    clip-path: polygon(50% 1%, 99% 50%, 50% 99%, 1% 50%);
+  }
+  /* keep the whole comp visible; the pieces stage in via .is-in on the root */
+  html.js .comp-flowdeck[data-reveal] { opacity: 1; transform: none; transition: none; }
+  /* fan out: each node flies home, staggered left-to-right, top-to-bottom */
+  .comp-flowdeck.is-in .fd-node {
+    left: calc(var(--l) * 1%);
+    top: calc(var(--t) * 1%);
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    transition-delay: calc(var(--i) * 45ms);
+  }
+  /* once fanned out, resolve to the detailed diagram and retire placeholders */
+  .comp-flowdeck.is-in .fd-final { opacity: 1; transition-delay: 2.4s; }
+  .comp-flowdeck.is-in .fd-nodes { opacity: 0; transition: opacity 0.6s var(--ease) 2.6s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .comp-flowdeck .fd-final { opacity: 1 !important; transition: none; }
+    .comp-flowdeck .fd-nodes { display: none; }
+  }
+
+  /* hia · "Design is never done": a seamless infinity loop, a colored segment
+     traveling endlessly around the ∞ (stroke-dasharray + dashoffset). Recoloured
+     to the brand blue; the dash lengths are measured by the script. */
+  .comp-infinity { display: grid; place-items: center; padding: clamp(var(--s-6), 6vh, var(--s-12)) 0; }
+  .comp-infinity .nd-loop { width: min(66vh, 34rem); height: auto; overflow: visible; }
+  .comp-infinity .nd-loop path { stroke-width: 13; stroke-linecap: round; }
+  .comp-infinity .nd-track { stroke: color-mix(in srgb, var(--accent) 18%, transparent); }
+  .comp-infinity .nd-master {
+    stroke: var(--accent);
+    stroke-dasharray: var(--nd-dash, 0), var(--nd-gap, 9999);
+    animation: nd-loop 2.3s linear infinite;
+  }
+  @keyframes nd-loop {
+    from { stroke-dashoffset: var(--nd-len, 0); }
+    to   { stroke-dashoffset: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .comp-infinity .nd-master { animation: none; stroke-dasharray: none; }
+  }
+
+  /* concierge · slide 10 "zero to one": drifting dots in shades of the brand
+     blue; a subset flies in to form 0, holds, scatters, and re-forms as 1 —
+     modeled on Allan Pope's "Dots Countdown". No background; sized by the script. */
+  .comp-dotloop { position: relative; width: 100%; aspect-ratio: 3 / 2; }
+  .comp-dotloop .dl-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* kit · "Designing the journey": the customer-journey example rebuilt from its
+     pieces. z-order: background colour, shapes, text, then the cursors. Positions
+     are % of the composition and easy to nudge. */
+  .comp-journey {
+    position: relative; aspect-ratio: 2475 / 1593; overflow: clip;
+    border-radius: var(--radius); container-type: inline-size;
+  }
+  .comp-journey .jr-bg { position: absolute; inset: 0; background: #e8ecfc; z-index: 0; }
+  .comp-journey .jr-shapes {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: contain; z-index: 1;
+  }
+  .comp-journey .jr-text {
+    position: absolute; z-index: 2; left: 50%; top: 49%; transform: translate(-50%, -50%);
+    margin: 0; text-align: center; color: #5b3fd6; white-space: nowrap;
+    font-family: var(--font-sans); font-weight: 800; line-height: 1.06;
+    letter-spacing: -0.01em; font-size: clamp(1.1rem, 7.2cqw, 3.4rem);
+  }
+  .comp-journey .jr-cur { position: absolute; z-index: 3; height: auto; will-change: transform; }
+  /* base positions */
+  .comp-journey .jr-customer { left: 3%;  top: 4%;  width: 19%; }
+  .comp-journey .jr-cx       { left: 46%; top: 29%; width: 10%; }
+  .comp-journey .jr-designer { left: 43%; top: 52%; width: 18%; }
+  /* each cursor traces the SAME triangle around its spot: a fluid glide to a
+     vertex, a short pause, then on to the next. Staggered by a third of the loop
+     with longer glides, so two can be in motion at once (one arriving as the
+     next sets off). Distances in cqw, so the path scales. */
+  .comp-journey .jr-cur { animation: jr-triangle 12s cubic-bezier(0.5, 0, 0.25, 1) infinite; }
+  .comp-journey .jr-customer { animation-delay: 0s; }
+  .comp-journey .jr-cx       { animation-delay: -4s; }
+  .comp-journey .jr-designer { animation-delay: -8s; }
+  @keyframes jr-triangle {
+    0%,  10%  { transform: translate(0, 0); }              /* settle at the base vertex */
+    28%, 40%  { transform: translate(5cqw, 4.5cqw); }      /* glide to vertex 2, pause */
+    58%, 70%  { transform: translate(-5cqw, 4.5cqw); }     /* glide to vertex 3, pause */
+    88%, 100% { transform: translate(0, 0); }              /* glide back, pause */
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .comp-journey .jr-cur { animation: none; }
+  }
+
+  /* concierge · slide 4 (animated): cards start stacked, fan into an organized
+     row, then a journey line draws left to right connecting them */
+  .comp-cardflow { position: relative; aspect-ratio: 16 / 7; }
+  .cf-card {
+    position: absolute; top: 18%; width: 15%; aspect-ratio: 3 / 4;
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 14px 30px -18px rgba(17, 21, 28, 0.4);
+    padding: 8%; display: flex; flex-direction: column; gap: 8%;
+    transition: transform 0.75s var(--ease); z-index: 1;
+  }
+  .cf-card-0 { left: 3%; }
+  .cf-card-1 { left: 23.5%; }
+  .cf-card-2 { left: 44%; }
+  .cf-card-3 { left: 64.5%; }
+  .cf-card-4 { left: 85%; }
+  .cf-bar { display: block; height: 12%; border-radius: 4px; background: var(--accent); width: 62%; }
+  .cf-rows { display: block; flex: 1; border-radius: 6px;
+    background: repeating-linear-gradient(var(--line-soft) 0 18%, transparent 18% 34%); }
+  .cf-node {
+    position: absolute; left: 50%; bottom: -13%; transform: translateX(-50%);
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); border: 3px solid var(--paper); z-index: 3;
+  }
+  /* the connecting journey line, behind the cards, drawn after they settle */
+  .cf-line {
+    position: absolute; left: 3%; right: 3%; top: calc(18% + 66%);
+    height: 3px; background: var(--accent); border-radius: 2px;
+    transform: scaleX(0); transform-origin: left center; z-index: 0;
+  }
+
+  /* concierge · slide 5: a genuine outline morph, Salesforce -> IEP.
+     The visible path's `d` is tweened point-by-point by the script below. */
+  .comp-crm { display: grid; place-items: center; padding: clamp(var(--s-6), 6vh, var(--s-12)) 0; }
+  .crm-morph { width: min(38vh, 18rem); height: auto; overflow: visible; }
+  .crm-src { position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
+
+  /* concierge · slide 10: an odometer that slides 0 up to 1 (and loops) */
+  .comp-zto { display: grid; place-items: center; padding: clamp(var(--s-6), 6vh, var(--s-12)) 0; }
+  /* one blue glyph at a time; 0 and 1 stacked, swapping with a right-to-left
+     glitchy twitch (only the motion is borrowed from the reference gif) */
+  .zto-num { position: relative; display: grid; place-items: center; }
+  .zto-d {
+    grid-area: 1 / 1;
+    font-family: var(--font-display); font-weight: 700;
+    font-size: min(30vh, 16rem); line-height: 1; color: var(--accent);
+    opacity: 0; will-change: transform, opacity;
+  }
+  .comp-zto.is-in .zto-d0 { animation: zto-zero 4s steps(1, end) infinite; }
+  .comp-zto.is-in .zto-d1 { animation: zto-one 4s steps(1, end) infinite; }
+  /* steps() keeps each frame crisp so the shifts read as glitchy twitches */
+  @keyframes zto-zero {
+    0%, 40%          { opacity: 1; transform: translateX(0); }
+    42%              { opacity: 1; transform: translateX(0.05em); }
+    44%              { opacity: 1; transform: translateX(-0.09em); }
+    46%              { opacity: 1; transform: translateX(0.04em); }
+    48%              { opacity: 1; transform: translateX(-0.03em); }
+    50%, 90%         { opacity: 0; transform: translateX(-0.6em); }
+    92%              { opacity: 0; transform: translateX(0.55em); }
+    94%              { opacity: 1; transform: translateX(0.08em); }
+    96%              { opacity: 1; transform: translateX(-0.05em); }
+    98%              { opacity: 1; transform: translateX(0.03em); }
+    100%             { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes zto-one {
+    0%, 40%          { opacity: 0; transform: translateX(0.55em); }
+    42%              { opacity: 0; transform: translateX(0.55em); }
+    44%              { opacity: 1; transform: translateX(0.08em); }
+    46%              { opacity: 1; transform: translateX(-0.05em); }
+    48%              { opacity: 1; transform: translateX(0.03em); }
+    50%, 90%         { opacity: 1; transform: translateX(0); }
+    92%              { opacity: 1; transform: translateX(0.05em); }
+    94%              { opacity: 1; transform: translateX(-0.09em); }
+    96%              { opacity: 1; transform: translateX(0.04em); }
+    98%              { opacity: 0; transform: translateX(-0.6em); }
+    100%             { opacity: 0; transform: translateX(-0.6em); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .comp-zto .zto-d0 { opacity: 0; animation: none; }
+    .comp-zto .zto-d1 { opacity: 1; animation: none; transform: none; }
+  }
+
+  /* about-jd · slide 1: "execution" struck out, "strategic leadership" replaces it */
+  .comp-jdstrike {
+    display: grid; place-items: center; text-align: center;
+    gap: clamp(var(--s-3), 2vh, var(--s-5)); padding: clamp(var(--s-4), 4vh, var(--s-8)) 0;
+  }
+  .jds-old { position: relative; display: inline-block; }
+  .jds-word {
+    font-family: var(--font-sans); font-weight: 300;
+    font-size: clamp(2rem, 1rem + 4vw, 4rem); line-height: 1;
+    color: color-mix(in srgb, var(--ink) 42%, transparent); letter-spacing: 0.01em;
+  }
+  .jds-line {
+    position: absolute; left: -2%; top: 52%; width: 104%; height: clamp(3px, 0.35vw, 5px);
+    background: color-mix(in srgb, var(--ink) 42%, transparent); border-radius: 3px;
+    transform: scaleX(0); transform-origin: left center;
+    transition: transform 0.55s var(--ease) 0.35s;
+  }
+  .comp-jdstrike.is-in .jds-line { transform: scaleX(1); }
+  .jds-new {
+    display: grid; gap: 0.02em; line-height: 1.02;
+    font-family: var(--font-sans); font-weight: 800; letter-spacing: -0.01em;
+    font-size: clamp(2.3rem, 1rem + 5vw, 4.6rem); color: var(--accent);
+  }
+  .jds-new span {
+    opacity: 0; transform: translateY(0.35em);
+    transition: opacity 0.5s ease, transform 0.5s var(--ease);
+  }
+  .comp-jdstrike.is-in .jds-new span { opacity: 1; transform: none; }
+  .comp-jdstrike.is-in .jds-new span:nth-child(1) { transition-delay: 0.95s; }
+  .comp-jdstrike.is-in .jds-new span:nth-child(2) { transition-delay: 1.1s; }
+  @media (prefers-reduced-motion: reduce) {
+    .comp-jdstrike .jds-line { transform: scaleX(1); transition: none; }
+    .comp-jdstrike .jds-new span { opacity: 1; transform: none; transition: none; }
+  }
+
+  /* about-jd · slide 2: shared artifacts with multiplayer cursors, laid out
+     pixel-for-pixel from 02_about-jd_example.png (1422 x 934) */
+  .comp-jdartifacts { width: 100%; }
+  .jda-stage {
+    position: relative; width: 100%; aspect-ratio: 1422 / 934;
+    container-type: inline-size;
+  }
+  .jda-row {
+    position: absolute; left: 1.7%; width: 96.9%; height: 16%;
+    display: flex; align-items: center; gap: 1.6cqw;
+    padding-left: 3.2%;
+    background: #fff; border-radius: 1.4cqw;
+    box-shadow: 0 1.1cqw 2.6cqw -1.6cqw rgba(17, 21, 28, 0.4);
+    transition: background 0.18s var(--ease), box-shadow 0.18s var(--ease);
+  }
+  /* the FY Strategic Direction highlight is the resting + hover state */
+  .jda-row.is-sel,
+  .jda-row:hover {
+    background: #eaf1ff;
+    box-shadow: 0 0 0 0.24cqw #4076f6, 0 1.3cqw 3cqw -1.6cqw rgba(17, 21, 28, 0.45);
+  }
+  /* .comp img{width:100%} out-specifies a bare .jda-icon, so scope these */
+  .comp-jdartifacts .jda-icon { width: 6.05%; height: auto; flex: none; display: block; }
+  .jda-title {
+    font-family: var(--font-sans); font-weight: 400;
+    font-size: 2.75cqw; letter-spacing: -0.01em; color: #595f6b;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .comp-jdartifacts .jda-cursor {
+    position: absolute; height: 13.5%; width: auto;
+    transform-origin: top left; pointer-events: none; z-index: 5;
+    filter: drop-shadow(0 0.5cqw 0.8cqw rgba(17, 21, 28, 0.22));
+    animation: jd-drift 6s ease-in-out infinite;
+  }
+  .jda-cursor--product { animation-delay: -1.4s; }
+  .jda-cursor--ux { animation-delay: -2.6s; }
+  .jda-cursor--ui { animation-delay: -3.7s; }
+  .jda-cursor--leadership { animation-delay: -4.8s; }
+  @keyframes jd-drift {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(0.3cqw, -0.5cqw); }
+  }
+
+  /* about-jd · slide 3: user-flow diagram, generic CX title, multiplayer cursors */
+  .comp-jdflow {
+    position: relative; width: 100%; aspect-ratio: 2475 / 1593;
+    padding: clamp(10px, 1.6vw, 22px); border-radius: clamp(12px, 1.6vw, 22px);
+    background: linear-gradient(135deg, #ffe6f3, #e2eeff);
+    overflow: hidden;
+  }
+  .jdf-diagram { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .jdf-title {
+    position: absolute; left: 50%; top: 47%; transform: translate(-50%, -50%);
+    max-width: 46%; text-align: center;
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.2rem, 0.6rem + 2.4vw, 2.6rem); line-height: 1.12;
+    letter-spacing: -0.01em; color: #3730c9;
+    background: color-mix(in srgb, #9ec9ff 70%, transparent);
+    padding: 0.12em 0.28em; border-radius: 6px; box-decoration-break: clone;
+    opacity: 0; transition: opacity 0.5s ease, transform 0.5s var(--ease);
+  }
+  .comp-jdflow.is-in .jdf-title { opacity: 1; }
+  .jdf-cursor {
+    position: absolute; height: clamp(40px, 5vw, 66px); width: auto;
+    transform-origin: top left; pointer-events: none; z-index: 6;
+    opacity: 0; transition: opacity 0.45s ease;
+    filter: drop-shadow(0 6px 10px rgba(17, 21, 28, 0.25));
+  }
+  .jdf-cursor.is-in { opacity: 1; animation: jd-drift 6s ease-in-out infinite; }
+  .jdf-cursor--cx.is-in { animation-delay: -2s; }
+  .jdf-cursor--xd.is-in { animation-delay: -3.6s; }
+  @media (prefers-reduced-motion: reduce) {
+    .jda-cursor, .jdf-cursor, .jdf-title { opacity: 1; animation: none; transition: none; }
+  }
+
+  /* hia · slide 1: two expert circles with tags; speech bubbles animate the
+     broken escalation (Tier 1 asks, Tier 2 types, Tier 1 gets an answer) */
+  .comp-hiabubbles { width: 100%; }
+  .hb-stage { position: relative; width: 100%; aspect-ratio: 750 / 400; container-type: inline-size; }
+  /* widths/heights must out-specify `.comp img { width:100% }` */
+  .comp-hiabubbles .hb-photo {
+    position: absolute; top: 10%; width: 42.7%; height: auto; z-index: 1;
+    filter: drop-shadow(0 1.4cqw 3cqw -1.4cqw rgba(17, 21, 28, 0.32));
+  }
+  .comp-hiabubbles .hb-photo-l { left: 2.6%; }
+  .comp-hiabubbles .hb-photo-r { left: 49.8%; }
+  /* both tags render at the exact same height (each svg is viewBox h=56) */
+  .comp-hiabubbles .hb-tag {
+    position: absolute; top: 84.9%; transform: translate(-50%, -50%);
+    height: 15.25%; width: auto; z-index: 3;
+    filter: drop-shadow(0 0.8cqw 1.4cqw -0.6cqw rgba(17, 21, 28, 0.28));
+  }
+  .comp-hiabubbles .hb-tag-l { left: 23.9%; }
+  .comp-hiabubbles .hb-tag-r { left: 71.1%; }
+  .comp-hiabubbles .hb-bubble {
+    position: absolute; top: 15%; width: 7.5%; height: auto; z-index: 4;
+    transform-origin: bottom left;
+    filter: drop-shadow(0 1cqw 1.6cqw rgba(17, 21, 28, 0.26));
+    opacity: 0; transform: scale(0.4);
+  }
+  .comp-hiabubbles .hb-q, .comp-hiabubbles .hb-check { left: 35.1%; }
+  .comp-hiabubbles .hb-reply { left: 82.3%; }
+  /* colours: reply bubble is white with dark-grey dots; the check starts blue */
+  .comp-hiabubbles .hb-reply-bg { fill: #fff; }
+  .comp-hiabubbles .hb-dot { fill: #2b2f36; transform-box: fill-box; transform-origin: center; }
+  .comp-hiabubbles .hb-check-bg { fill: #236cff; }
+
+  /* the story, looping (12s): Tier 1 asks and it sits a beat; Tier 2 types for a
+     few cycles; the typing clears; Tier 1's ask then resolves into a green check
+     that holds — then the whole thing loops. */
+  .comp-hiabubbles.is-in .hb-q     { animation: hb-q-story 12s var(--ease) infinite; }
+  .comp-hiabubbles.is-in .hb-reply { animation: hb-reply-story 12s var(--ease) infinite; }
+  .comp-hiabubbles.is-in .hb-check { animation: hb-check-story 12s var(--ease) infinite; }
+  .comp-hiabubbles.is-in .hb-check-bg { animation: hb-check-color 12s linear infinite; }
+  /* the dots keep typing (staggered) while the reply bubble is up */
+  .comp-hiabubbles.is-in .hb-dot   { animation: hb-typing 1.3s ease-in-out infinite; }
+  .comp-hiabubbles.is-in .hb-dot-2 { animation-delay: 0.18s; }
+  .comp-hiabubbles.is-in .hb-dot-3 { animation-delay: 0.36s; }
+
+  @keyframes hb-q-story {
+    0%, 3%    { opacity: 0; transform: scale(0.4); }
+    8%        { opacity: 1; transform: scale(1); }
+    60%       { opacity: 1; transform: scale(1); }
+    64%, 100% { opacity: 0; transform: scale(0.4); }
+  }
+  @keyframes hb-reply-story {
+    0%, 20%   { opacity: 0; transform: scale(0.4); }
+    25%       { opacity: 1; transform: scale(1); }
+    55%       { opacity: 1; transform: scale(1); }
+    59%, 100% { opacity: 0; transform: scale(0.4); }
+  }
+  @keyframes hb-check-story {
+    0%, 64%   { opacity: 0; transform: scale(0.4); }
+    69%       { opacity: 1; transform: scale(1); }
+    95%       { opacity: 1; transform: scale(1); }
+    99%, 100% { opacity: 0; transform: scale(0.4); }
+  }
+  @keyframes hb-check-color {
+    0%, 68% { fill: #236cff; }   /* blue on the way in */
+    74%     { fill: #1fa85a; }   /* resolves to green */
+    98%     { fill: #1fa85a; }
+    100%    { fill: #236cff; }   /* reset for the loop */
+  }
+  @keyframes hb-typing {
+    0%, 72%, 100% { opacity: 0.3; transform: translateY(1.4px); }
+    36%           { opacity: 1;   transform: translateY(-1.4px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .comp-hiabubbles .hb-q, .comp-hiabubbles .hb-reply { opacity: 0; animation: none; }
+    .comp-hiabubbles .hb-check { opacity: 1; transform: none; animation: none; }
+    .comp-hiabubbles .hb-check-bg { fill: #1fa85a; animation: none; }
+    .comp-hiabubbles .hb-dot { animation: none; }
+  }
+
+  /* hia · slide 3: persona circle + floating IEP/TT/Assist icons + support panel */
+  .comp-hiasupport { width: 100%; }
+  .hs-stage { position: relative; width: 100%; aspect-ratio: 1045 / 824; container-type: inline-size; }
+  /* positions measured pixel-for-pixel from 03_project-goals_example-layout.png
+     (1045 x 824). Static for now; animation comes later. */
+  .hs-photo {
+    position: absolute; left: 11.2%; top: 12.5%; width: 58.1%; aspect-ratio: 1; margin: 0;
+    border-radius: 50%; overflow: hidden; z-index: 1;
+    box-shadow: 0 2cqw 4cqw -2cqw rgba(17, 21, 28, 0.4);
+  }
+  .comp-hiasupport .hs-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .comp-hiasupport .hs-window {
+    position: absolute; left: 59.3%; top: 12.6%; width: 34.3%; height: auto; z-index: 2;
+    filter: drop-shadow(0 2cqw 4cqw -1.6cqw rgba(17, 21, 28, 0.22));
+  }
+  .comp-hiasupport .hs-icon {
+    position: absolute; height: auto; z-index: 4;
+    filter: drop-shadow(0 1cqw 1.6cqw rgba(17, 21, 28, 0.28));
+    opacity: 0; transform: translateY(18px);
+  }
+  /* IEP icon: the bare blue triangle, enlarged, centered where the example's
+     icon sits (no white circle backdrop). nudged down 10px / left 30px */
+  .comp-hiasupport .hs-iep { left: calc(10.2% - 30px); top: calc(29.4% + 10px); width: 12%; }
+  .comp-hiasupport .hs-tt { left: calc(12.3% - 35px); top: 55%; width: 9.5%; }
+  .comp-hiasupport .hs-assist { left: 30.6%; top: calc(76.6% + 15px); width: 9.5%; }
+  /* the three logos rise up into place */
+  .comp-hiasupport.is-in .hs-icon { animation: hs-riseup 0.6s var(--ease) forwards; }
+  .comp-hiasupport.is-in .hs-iep { animation-delay: 0.3s; }
+  .comp-hiasupport.is-in .hs-tt { animation-delay: 0.55s; }
+  .comp-hiasupport.is-in .hs-assist { animation-delay: 0.8s; }
+  @keyframes hs-riseup { to { opacity: 1; transform: translateY(0); } }
+
+  /* two decorative sparkle clusters (3 sparkles each) that twinkle in */
+  .comp-hiasupport .hs-cluster { position: absolute; z-index: 5; width: 13%; aspect-ratio: 1; color: var(--accent); }
+  .comp-hiasupport .hs-cluster-top { left: calc(3.5% + 30px); top: calc(8% + 10px); }
+  .comp-hiasupport .hs-cluster-bot { left: 47%; top: calc(69% + 30px); }
+  .comp-hiasupport .hs-spark { position: absolute; opacity: 0; transform: scale(0.4); }
+  .comp-hiasupport .hs-spark svg { width: 100%; height: auto; display: block; fill: currentColor; }
+  /* three sparkles arranged as a cluster (sizes are % of the cluster box) */
+  .comp-hiasupport .hs-spark-a { width: 58%; left: 4%; top: 22%; }
+  .comp-hiasupport .hs-spark-b { width: 40%; left: 54%; top: 50%; }
+  .comp-hiasupport .hs-spark-c { width: 30%; left: 60%; top: 0%; }
+  .comp-hiasupport.is-in .hs-spark { animation: hs-twinkle 2.8s ease-in-out infinite; }
+  .comp-hiasupport.is-in .hs-cluster-top .hs-spark-a { animation-delay: 1.0s; }
+  .comp-hiasupport.is-in .hs-cluster-top .hs-spark-b { animation-delay: 1.8s; }
+  .comp-hiasupport.is-in .hs-cluster-top .hs-spark-c { animation-delay: 2.5s; }
+  .comp-hiasupport.is-in .hs-cluster-bot .hs-spark-a { animation-delay: 1.4s; }
+  .comp-hiasupport.is-in .hs-cluster-bot .hs-spark-b { animation-delay: 2.2s; }
+  .comp-hiasupport.is-in .hs-cluster-bot .hs-spark-c { animation-delay: 3.0s; }
+  @keyframes hs-twinkle {
+    0%, 100% { opacity: 0.15; transform: scale(0.45) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1) rotate(90deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .comp-hiasupport .hs-icon { opacity: 1; transform: none; animation: none; }
+    .comp-hiasupport .hs-spark { opacity: 0.9; transform: none; animation: none; }
+  }
+
+  /* hia · slide 4 "De-escalation by design": a looping story driven by the script.
+     A question and an alert both route (wires) to support; support loads each
+     content resource in turn, drawing a connector between them, then scans back
+     and forth through them a few times ("processing"), and finally replies.
+     States are toggled by class; CSS just tweens them. Positions are % of the
+     1045x824 layout. */
+  .comp-deesc { width: 100%; }
+  .de-stage { position: relative; width: 100%; aspect-ratio: 1045 / 824; container-type: inline-size; }
+
+  .comp-deesc .de-icon {
+    position: absolute; height: auto; transform-origin: center;
+    opacity: 0; transform: scale(0.6);
+    transition: opacity 0.45s var(--ease), transform 0.45s var(--ease);
+  }
+  .comp-deesc .de-icon.on { opacity: 1; transform: scale(1); }
+  .comp-deesc .de-question { left: 6.5%;  top: 7%;   width: 22%; }
+  .comp-deesc .de-ask      { left: 68%;   top: 9.5%; width: 22%; }
+  .comp-deesc .de-support  { left: 37.5%; top: 51%;  width: 24%; }
+
+  /* connector wires (drawn on) */
+  .comp-deesc .de-wires { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; overflow: visible; }
+  .comp-deesc .de-wire, .comp-deesc .de-arrow {
+    fill: none; stroke: #9585b5; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 260; stroke-dashoffset: 260;
+    transition: stroke-dashoffset 0.7s var(--ease);
+  }
+  .comp-deesc .de-arrow { stroke-dasharray: 52; stroke-dashoffset: 52; }
+  .comp-deesc .de-wire.on, .comp-deesc .de-arrow.on { stroke-dashoffset: 0; }
+
+  /* the content-resource row: icons with a drawn dotted segment between each */
+  .comp-deesc .de-process {
+    position: absolute; left: 22%; right: 20%; bottom: 5.5%;
+    display: flex; align-items: center; z-index: 2;
+  }
+  .comp-deesc .de-step {
+    position: static; flex: 0 0 auto; width: 5.6cqw; height: auto;
+    transform-origin: center; opacity: 0; transform: scale(0.6);
+    transition: opacity 0.4s var(--ease), transform 0.28s var(--ease);
+  }
+  .comp-deesc .de-step.loaded { opacity: 1; transform: scale(1); }
+  .comp-deesc .de-step.scan { transform: scale(1.24); }
+  .comp-deesc .de-seg {
+    flex: 1 1 auto; height: 0; margin: 0 0.4cqw;
+    border-top: 0.32cqw dotted #9585b5;
+    transform: scaleX(0); transform-origin: left center;
+    transition: transform 0.4s var(--ease);
+  }
+  .comp-deesc .de-seg.drawn { transform: scaleX(1); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .comp-deesc .de-icon, .comp-deesc .de-step { opacity: 1; transform: none; }
+    .comp-deesc .de-wire, .comp-deesc .de-arrow { stroke-dashoffset: 0; }
+    .comp-deesc .de-seg { transform: scaleX(1); }
+  }
+
+  /* hia · slide 8: the design process loops (two arrows circling), never done */
+  .comp-hiaprocess { display: grid; place-items: center; padding: clamp(var(--s-4), 4vh, var(--s-8)) 0; }
+  .hp-svg { width: min(46vh, 22rem); height: auto; overflow: visible; }
+  .hp-track { fill: none; stroke: color-mix(in srgb, var(--accent) 16%, transparent); stroke-width: 2; }
+  .hp-ring path { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; }
+  .hp-ring { transform-origin: 100px 100px; }
+  .comp-hiaprocess.is-in .hp-ring { animation: hp-spin 7s linear infinite; }
+  .hp-nodes circle { fill: color-mix(in srgb, var(--accent) 55%, var(--surface)); }
+  .comp-hiaprocess.is-in .hp-nodes circle { animation: hp-node 3.5s ease-in-out infinite; }
+  .hp-nodes circle:nth-child(2) { animation-delay: 0.9s; }
+  .hp-nodes circle:nth-child(3) { animation-delay: 1.8s; }
+  .hp-nodes circle:nth-child(4) { animation-delay: 2.7s; }
+  @keyframes hp-spin { to { transform: rotate(360deg); } }
+  @keyframes hp-node { 0%, 100% { fill: color-mix(in srgb, var(--accent) 30%, var(--surface)); } 50% { fill: var(--accent); } }
+  @media (prefers-reduced-motion: reduce) {
+    .comp-hiaprocess .hp-ring, .comp-hiaprocess .hp-nodes circle { animation: none; }
+  }
+
+  /* ai-native · slide 3: work coming into the IEP window. Window centered,
+     tool icons at the corners, blue arrows on top pointing inward. Positions
+     traced from 03_work-into-iep_example.png (5:4 canvas). */
+  .comp-workinto { position: relative; aspect-ratio: 5 / 4; }
+  .wi-window {
+    position: absolute; left: 21%; top: 26%; width: 58%; z-index: 1;
+  }
+  .wi-window img { width: 100%; height: auto; display: block; }
+  .wi-sat { position: absolute; z-index: 2; }
+  .wi-sat img { display: block; width: 100%; height: auto; }
+  .wi-arrow { position: absolute; z-index: 5; opacity: 0.95; }
+  .wi-arrow img { display: block; width: 100%; height: auto; }
+  /* icon placements, measured off the example so each arrow starts at its
+     own icon instead of floating away from it */
+  .wi-tl { left: 10.9%; top: 10.4%; width: 14.8%; }
+  .wi-tr { left: 67%; top: 10.7%; width: 15.4%; }
+  .wi-br { left: 77.5%; top: 69.2%; width: 15.3%; }
+  .wi-bc { left: 44%; top: 74%; width: 16.2%; }
+  .wi-bl { left: 7.8%; top: 62.1%; width: 11%; }
+  /* Arrow boxes measured off 03_work-into-iep_example.png. The img carries
+     the flip so it never fights the reveal transform on the span.
+     arrow_02 natural = down-right, arrow_01 natural = down-left. */
+  .wi-arr-tl { left: 21.9%; top: 12.4%; width: 19.2%; }     /* 02, down-right */
+  .wi-arr-tr { left: 75.7%; top: 19.9%; width: 8.7%; }      /* 01, down-left */
+  .wi-arr-br { left: 62.6%; top: 67.2%; width: 19.1%; }
+  .wi-arr-br img { transform: rotate(180deg); }             /* 02 -> up-left */
+  .wi-arr-bc { left: 35.4%; top: 61.3%; width: 8.5%; }
+  .wi-arr-bc img { transform: rotate(180deg); }             /* 01 -> up-right */
+  /* the arrow above 03_account-lookup.svg: mirrored, then rotated a further
+     180deg (which cancels back to the artwork's natural down-right), and
+     dropped so it meets the icon below it */
+  .wi-arr-bl { left: 12.2%; top: 47%; width: 18.2%; }
+  .wi-arr-bl img { transform: rotate(-45deg); }             /* 02 -> up-right */
+
+  /* ai-native · slide 9: conclusion collage. Every position below is measured
+     off 09_platform-forward_example.png (1045x824) rather than eyeballed. */
+  .comp-conclusion2 { position: relative; aspect-ratio: 1045 / 824; }
+  .c2-blob {
+    position: absolute; left: 14.4%; top: 18.9%; width: 51.7%; margin: 0; z-index: 1;
+  }
+  .c2-blob img { width: 100%; height: auto; display: block; }
+  .c2-window { left: 56.5%; top: 15.8%; width: 34.3%; z-index: 4; }
+  .c2-iep { left: 9.1%; top: 27.9%; width: 14.3%; z-index: 3; }
+  .c2-tt { left: 12.4%; top: 55.1%; width: 9.4%; z-index: 3; }
+  .c2-qb { left: 30.6%; top: 76.7%; width: 9.4%; z-index: 3; }
+
+  /* sparkle clusters: three stars each, scattered inside the cluster box */
+  .c2-spark { z-index: 2; }
+  .c2-spark-tl { left: 19.1%; top: 10.4%; width: 6.6%; }
+  .c2-spark-br { left: 63.8%; top: 79.9%; width: 7.6%; }
+  .c2-spark > div { position: relative; padding-bottom: 118%; }
+  .spk { position: absolute; display: block; overflow: visible; }
+  .spk path { fill: currentColor; }
+  .spk-a { left: 22%; top: 0; width: 66%; color: #236cff; }
+  .spk-b { left: 0; top: 46%; width: 40%; color: #2a157b; }
+  .spk-c { left: 52%; top: 58%; width: 48%; color: #2a157b; }
+  /* real sparkle behaviour: each star pops in fast, holds a moment, shrinks
+     away, then stays gone for most of the loop, so the cluster twinkles
+     irregularly instead of pulsing in unison */
+  .spk { transform-origin: center; animation: spk-pop 3.4s ease-in-out var(--sd, 0s) infinite; }
+  .spk-b { animation-duration: 4.1s; }
+  .spk-c { animation-duration: 2.9s; }
+  @keyframes spk-pop {
+    0% { transform: scale(0) rotate(-12deg); opacity: 0; }
+    8% { transform: scale(1.15) rotate(0deg); opacity: 1; }
+    18% { transform: scale(0.92); opacity: 1; }
+    30% { transform: scale(1) rotate(6deg); opacity: 0.9; }
+    45% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+
+  /* ai-native · slide 7: the transcript app with the interview clip inside.
+     The gif is heavy, so it only gets a src once the slide is approached. */
+  .comp-research7 { position: relative; }
+  .r7-app { display: block; width: 100%; height: auto; }
+  .r7-video {
+    position: absolute; left: 63.5%; top: 7.6%; width: 35.4%; height: 23.4%;
+    object-fit: cover; display: block; background: #0d0f12;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spk { animation: none; }
+  }
+
+  @media (max-width: 60rem) {
+    .comp-goals { gap: var(--s-3); }
+    .goal-arrow { width: 3rem; }
+    .arch-card { width: 46%; }
+  }
+</style>

@@ -1,0 +1,52 @@
+---
+import Base from "../../layouts/Base.astro";
+import DeckChrome from "../../components/DeckChrome.astro";
+import ParallaxScript from "../../components/ParallaxScript.astro";
+import ProjectSection from "../../components/ProjectSection.astro";
+import ProjectDeepDive from "../../components/ProjectDeepDive.astro";
+import ProjectSlides from "../../components/ProjectSlides.astro";
+import { getCollection } from "astro:content";
+import { deckSlides, deckCovers } from "../../data/slides";
+import "../../styles/deck.css";
+
+export async function getStaticPaths() {
+  const projects = await getCollection("projects");
+  // Only real case studies get their own page (and the footer "Next" rotation).
+  // The "also in the kit" pieces are non-clickable standalone slides now.
+  const ordered = projects
+    .filter((p) => p.data.caseStudy)
+    .sort((a, b) => a.data.order - b.data.order);
+  return ordered.map((entry, i) => ({
+    params: { slug: entry.id },
+    props: {
+      entry,
+      next: ordered[i + 1] ?? null,
+    },
+  }));
+}
+
+const { entry, next } = Astro.props;
+const p = entry.data;
+const slides = deckSlides[entry.id];
+const footerNext = next
+  ? { title: next.data.title, href: `/case-studies/${next.id}` }
+  : undefined;
+---
+
+<Base header={false} footerNext={footerNext} title={p.title} description={p.oneLine} bodyClass="is-deck">
+  <DeckChrome current="case-studies" detail={p.title} />
+  <div class="deck-frame" aria-hidden="true"></div>
+
+  <!-- 1 · summary cover (shared component) --------------------------------- -->
+  <ProjectSection entry={entry} as="h1" back={true} cover={deckCovers[entry.id]} />
+
+  <!-- 2 · the walkthrough: presentation slides when authored, else the
+       auto-generated asset deep dive ---------------------------------------- -->
+  {slides ? (
+    <ProjectSlides slides={slides} title={`${p.title} · Speaker notes`} />
+  ) : (
+    <ProjectDeepDive slug={entry.id} />
+  )}
+
+  <ParallaxScript />
+</Base>

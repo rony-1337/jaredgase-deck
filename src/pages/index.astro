@@ -1,0 +1,195 @@
+---
+import Base from "../layouts/Base.astro";
+import DeckChrome from "../components/DeckChrome.astro";
+import DepthChooser from "../components/DepthChooser.astro";
+import ParallaxScript from "../components/ParallaxScript.astro";
+import { site } from "../data/site";
+import "../styles/deck.css";
+
+const tags = [site.title, site.location, "Platforms · AI · Systems"];
+
+// Interview framing for this specific conversation. Swap for the next one.
+const interview = {
+  company: "Solar Turbines",
+  role: "Principal User Experience Designer",
+  presenter: "Jared Gase",
+  date: "Tuesday, July 28",
+  agenda: [
+    { time: "6 minutes", title: "About me", sub: "At home & at work" },
+    { time: "4 minutes", title: "About work", sub: "What is VEP and why is it unique?" },
+    { time: "20 minutes", title: "Case study using the STAR method", sub: "Migration from Salesforce to IEP" },
+    { time: "15 minutes", title: "Follow-ups and Q&A", sub: "" },
+  ],
+};
+---
+
+<Base header={false} title={`Jared Gase · ${interview.company}`} description={site.intro} bodyClass="is-deck">
+  <DeckChrome />
+  <div class="deck-frame" aria-hidden="true"></div>
+
+  <!-- 1 · TITLE ---------------------------------------------------------- -->
+  <section class="scene scene--full snap tv" aria-labelledby="tv-title">
+    <div class="scene-inner tv-grid">
+      <div class="tv-copy" data-parallax data-speed-x="-620" data-speed-y="0">
+        <h1 id="tv-title" class="tv-title">
+          <span class="tv-role" data-reveal data-from="right">{interview.role}</span>
+          <span class="tv-subject" data-reveal data-from="right" style="--reveal-delay:120ms">{interview.company}</span>
+          <span class="tv-label" data-reveal data-from="right" style="--reveal-delay:220ms">Interview</span>
+        </h1>
+        <div class="tv-by" data-reveal style="--reveal-delay:340ms">
+          <p class="tv-name">by {interview.presenter}</p>
+          <p class="tv-date">{interview.date}</p>
+        </div>
+      </div>
+      <figure class="tv-shot" data-reveal data-from="left" style="--reveal-delay:120ms">
+        <div data-parallax data-speed-x="720" data-speed-y="0">
+          <img src="/img/hero-homepage.png" alt="Intuit Expert Portal on a laptop" width="3000" height="2250" />
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 2 · AGENDA --------------------------------------------------------- -->
+  <section id="agenda" class="scene scene--full snap" aria-labelledby="agenda-title">
+    <div class="scene-inner">
+      <p id="agenda-title" class="eyebrow agenda-eyebrow" data-reveal>Agenda</p>
+      <ol class="agenda">
+        {interview.agenda.map((item, i) => (
+          <li data-reveal style={`--reveal-delay:${120 + i * 110}ms`}>
+            <span class="agenda-num">{i + 1}</span>
+            <span class="agenda-text">
+              <span class="agenda-time">{item.time}</span>
+              <span class="agenda-item">{item.title}</span>
+              {item.sub && <span class="agenda-sub">{item.sub}</span>}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- 3 · THESIS HERO ---------------------------------------------------- -->
+  <section class="scene scene--full snap hero" aria-labelledby="thesis-title">
+    <div class="scene-inner hero-grid">
+      <ul class="hero-rail" data-reveal>
+        {tags.map((t) => <li class="tag">{t}</li>)}
+      </ul>
+      <div class="hero-display">
+        <p
+          class="hero-echo"
+          aria-hidden="true"
+          data-parallax
+          data-speed-x="150"
+          data-speed-y="26"
+        >
+          {site.thesis}
+        </p>
+        <h2 id="thesis-title" class="hero-title" data-parallax data-speed-x="60">
+          {site.thesis}
+        </h2>
+      </div>
+      <div class="hero-body" data-reveal style="--reveal-delay:140ms">
+        <p class="hero-lede">{site.intro}</p>
+        <a class="cue" href="#views">
+          <span>Choose a view</span>
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+            <path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · CHOOSE A VIEW -------------------------------------------------- -->
+  <section id="views" class="scene scene--full snap views" aria-label="Choose a view">
+    <div class="scene-inner">
+      <div class="views-intro" data-reveal>
+        <p class="eyebrow">Ways in</p>
+        <h2 class="views-title">Choose how deep you want to go.</h2>
+      </div>
+      <div data-reveal style="--reveal-delay:120ms">
+        <DepthChooser />
+      </div>
+    </div>
+  </section>
+
+  <ParallaxScript />
+</Base>
+
+<style>
+  /* title slide: big stacked title left, laptop bleeding off the right */
+  .tv { overflow: clip; }
+  .tv-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(var(--s-5), 3vw, var(--s-8)); align-items: center;
+  }
+  /* copy stays above the (much larger) laptop where they overlap */
+  .tv-copy { position: relative; z-index: 2; }
+  .tv-title { display: grid; gap: 0; }
+  .tv-title span {
+    display: block; line-height: 0.98; letter-spacing: -0.02em;
+    font-size: clamp(2.4rem, 1rem + 5.4vw, 5rem);
+  }
+  .tv-role { font-family: var(--font-sans); font-weight: 700; color: var(--accent-ink); }
+  .tv-subject {
+    font-family: var(--font-display); font-weight: 700; font-style: italic;
+    letter-spacing: -0.01em; color: var(--ink);
+  }
+  .tv-label { font-family: var(--font-sans); font-weight: 700; color: var(--accent-ink); }
+  .tv-by { margin-top: clamp(var(--s-6), 5vh, var(--s-10)); }
+  .tv-name { font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+  .tv-date { margin-top: var(--s-1); color: var(--ink); }
+  /* the laptop reads very large and runs off the right / top / bottom edges,
+     overlapping the copy on its left (copy sits above via z-index) */
+  .tv-shot { margin: 0; position: relative; z-index: 1; }
+  .tv-shot > div { width: 190%; margin-left: -48%; }
+  .tv-shot img {
+    display: block; width: 100%; height: auto;
+    animation: laptop-bounce 5.5s ease-in-out infinite;
+  }
+  @keyframes laptop-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tv-shot img { animation: none; }
+  }
+
+  /* agenda: numbered discs with time / title / sub */
+  .agenda-eyebrow { color: var(--accent-ink); font-size: var(--t-small); }
+  .agenda {
+    margin-top: clamp(var(--s-6), 5vh, var(--s-10));
+    display: grid; gap: clamp(var(--s-5), 3.5vh, var(--s-8)); max-width: 52rem;
+  }
+  .agenda li { display: flex; align-items: flex-start; gap: clamp(var(--s-4), 2.5vw, var(--s-6)); }
+  .agenda-num {
+    flex: none; display: grid; place-items: center;
+    width: clamp(2rem, 2.6vw, 2.6rem); aspect-ratio: 1; border-radius: 50%;
+    background: var(--line-soft); color: var(--accent-ink);
+    font-weight: 700; font-size: var(--t-small);
+  }
+  .agenda-text { display: grid; gap: 2px; }
+  .agenda-time {
+    font-family: var(--font-mono); font-size: var(--t-label);
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  .agenda-item {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.3rem, 1rem + 1.4vw, 2rem); letter-spacing: -0.01em;
+    color: var(--ink); line-height: 1.15;
+  }
+  .agenda-sub {
+    margin-top: 2px; font-size: 1.05rem; color: var(--ink-soft); line-height: 1.4;
+  }
+
+  .views { padding-top: clamp(3rem, 8vh, 5rem); }
+  .views-intro { margin-bottom: clamp(var(--s-6), 5vh, var(--s-10)); }
+  .views-title { margin-top: var(--s-3); font-size: clamp(2rem, 1rem + 3.4vw, 3rem); max-width: none; white-space: nowrap; }
+  @media (max-width: 34rem) { .views-title { white-space: normal; } }
+
+  @media (max-width: 60rem) {
+    .tv-grid { grid-template-columns: 1fr; gap: var(--s-6); }
+    .tv-shot { order: -1; max-width: 34rem; }
+    .tv-shot > div { width: 100%; }
+  }
+</style>

@@ -1,0 +1,209 @@
+---
+import Base from "../../layouts/Base.astro";
+import { modes } from "../../data/site";
+
+// Presenter view. This is the control surface you keep on a second screen or
+// phone while the audience sees the clean public view. Wiring it to live mode
+// content and a running timer is the next build step (see BUILD_PLAN.md).
+
+const agenda = [
+  { t: "0:00", label: "Open", note: "Thesis: I design the system, not just the screen. Set the depth for the room." },
+  { t: "2:00", label: "About me", note: "Home and community, fast. Dad of three, 501st, design community. Keep it human." },
+  { t: "5:00", label: "The platform", note: "Why VEP is unusual to design for. Two directions at once. Land the durable, reusable, scalable line." },
+  { t: "10:00", label: "Concierge", note: "Zero to one. 53 percent of conversions. Be clear: I built Concierge, I lead design on the platform." },
+  { t: "20:00", label: "Salesforce to IEP", note: "Flagship. Frameworks, then past parity with AI. 40 percent fewer escalations. Slow down here." },
+  { t: "28:00", label: "Close", note: "What I am looking for next. Invite questions. Offer to go deeper on any one." },
+];
+---
+
+<Base mode="customize" theme="dark" title="Presenter View" header={false} footer={false}>
+  <div class="pv">
+    <header class="pv-top">
+      <div class="pv-brand">
+        <span class="rec" aria-hidden="true"></span>
+        <span>Presenter View</span>
+      </div>
+      <div class="pv-timer" id="timer">00:00</div>
+      <a class="pv-exit" href="/">Exit</a>
+    </header>
+
+    <div class="pv-now">
+      <span class="eyebrow accent">On screen now</span>
+      <h1 class="pv-now-title">Opening</h1>
+      <p class="pv-now-note">
+        Read the room first. If it is recruiters, stay high. If it is designers,
+        signal that you will go deep. Then start the thesis.
+      </p>
+    </div>
+
+    <section class="pv-agenda">
+      <div class="pv-agenda-head">
+        <span class="eyebrow">Run of show · ~30 min</span>
+        <span class="pv-stub">Live sync wires up next</span>
+      </div>
+      <ol class="pv-list">
+        {
+          agenda.map((a) => (
+            <li class="pv-item">
+              <span class="pv-time">{a.t}</span>
+              <div>
+                <span class="pv-label">{a.label}</span>
+                <p class="pv-note">{a.note}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <footer class="pv-foot">
+      <span class="eyebrow">Quick jumps</span>
+      <nav class="pv-jumps">
+        {modes.filter((m) => !m.live).map((m) => <a href={m.href}>{m.name}</a>)}
+      </nav>
+    </footer>
+  </div>
+</Base>
+
+<style>
+  .pv {
+    max-width: 60rem;
+    margin-inline: auto;
+    padding: var(--s-5);
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    gap: var(--s-5);
+  }
+  .pv-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--s-4);
+    border-bottom: 1px solid var(--line);
+  }
+  .pv-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    font-family: var(--font-mono);
+    font-size: var(--t-small);
+    letter-spacing: 0.04em;
+  }
+  .rec {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .pv-timer {
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .pv-exit {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .pv-exit:hover {
+    color: var(--accent-ink);
+  }
+
+  .pv-now {
+    padding: var(--s-6);
+    background: var(--surface);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+    border-radius: var(--radius);
+  }
+  .pv-now-title {
+    font-size: var(--t-h2);
+    margin-top: var(--s-3);
+  }
+  .pv-now-note {
+    margin-top: var(--s-3);
+    color: var(--ink-soft);
+    max-width: 60ch;
+    line-height: 1.55;
+  }
+
+  .pv-agenda-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    margin-bottom: var(--s-4);
+  }
+  .pv-stub {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    color: var(--accent-ink);
+  }
+  .pv-list {
+    display: grid;
+    gap: 2px;
+  }
+  .pv-item {
+    display: grid;
+    grid-template-columns: 4rem 1fr;
+    gap: var(--s-4);
+    padding: var(--s-4);
+    border-radius: var(--radius-s);
+    transition: background 0.15s var(--ease);
+  }
+  .pv-item:hover {
+    background: var(--surface);
+  }
+  .pv-time {
+    font-family: var(--font-mono);
+    font-size: var(--t-small);
+    color: var(--accent-ink);
+  }
+  .pv-label {
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .pv-note {
+    margin-top: 4px;
+    color: var(--ink-soft);
+    font-size: var(--t-small);
+    line-height: 1.5;
+  }
+
+  .pv-foot {
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--line);
+  }
+  .pv-jumps {
+    margin-top: var(--s-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-5);
+  }
+  .pv-jumps a {
+    font-family: var(--font-mono);
+    font-size: var(--t-small);
+    color: var(--ink-soft);
+  }
+  .pv-jumps a:hover {
+    color: var(--accent-ink);
+  }
+</style>
+
+<script>
+  // Simple count-up so the presenter shell feels alive. Real version will sync
+  // to the segment you are on and warn when you run long.
+  const el = document.getElementById("timer");
+  if (el) {
+    let s = 0;
+    setInterval(() => {
+      s += 1;
+      const m = String(Math.floor(s / 60)).padStart(2, "0");
+      const ss = String(s % 60).padStart(2, "0");
+      el.textContent = `${m}:${ss}`;
+    }, 1000);
+  }
+</script>
