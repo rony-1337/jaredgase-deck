@@ -8,7 +8,26 @@ import "../styles/deck.css";
 
 const tags = [site.title, site.location, "Platforms · AI · Systems"];
 
-// Interview framing for this specific conversation. Swap for the next one.
+// ── Homepage mode ──────────────────────────────────────────────────────
+// Two modes for the hero. Portfolio mode (default) is evergreen and audience-
+// agnostic. Interview mode swaps in a job-specific title + date and shows the
+// Agenda section below the hero.
+//
+// TO BRING INTERVIEW MODE BACK for the next conversation:
+//   1. set showInterview = true
+//   2. update the `interview` values below (company / role / date / agenda)
+const showInterview = false;
+
+// Evergreen title shown in portfolio mode. Three stacked lines; the big middle
+// line is the name (same visual slot the company name uses in interview mode).
+const portfolio = {
+  role: "Staff Product Designer",
+  name: "Jared Gase",
+  label: "Portfolio",
+};
+
+// Interview framing for a specific conversation. Kept here as a ready template
+// even while portfolio mode is on. Last used: Qualcomm, Aug 2026.
 const interview = {
   company: "Qualcomm",
   role: "Senior Web UX Designer",
@@ -24,7 +43,7 @@ const interview = {
 };
 ---
 
-<Base header={false} title={`Jared Gase · ${interview.company}`} description={site.intro} bodyClass="is-deck">
+<Base header={false} title={`Jared Gase · ${showInterview ? interview.company : portfolio.role}`} description={site.intro} bodyClass="is-deck">
   <DeckChrome />
   <div class="deck-frame" aria-hidden="true"></div>
 
@@ -33,14 +52,16 @@ const interview = {
     <div class="scene-inner tv-grid">
       <div class="tv-copy" data-parallax data-speed-x="-620" data-speed-y="0">
         <h1 id="tv-title" class="tv-title">
-          <span class="tv-role" data-reveal data-from="right">{interview.role}</span>
-          <span class="tv-subject" data-reveal data-from="right" style="--reveal-delay:120ms">{interview.company}</span>
-          <span class="tv-label" data-reveal data-from="right" style="--reveal-delay:220ms">Interview</span>
+          <span class="tv-role" data-reveal data-from="right">{showInterview ? interview.role : portfolio.role}</span>
+          <span class="tv-subject" data-reveal data-from="right" style="--reveal-delay:120ms">{showInterview ? interview.company : portfolio.name}</span>
+          <span class="tv-label" data-reveal data-from="right" style="--reveal-delay:220ms">{showInterview ? "Interview" : portfolio.label}</span>
         </h1>
-        <div class="tv-by" data-reveal style="--reveal-delay:340ms">
-          <p class="tv-name">by {interview.presenter}</p>
-          <p class="tv-date">{interview.date}</p>
-        </div>
+        {showInterview && (
+          <div class="tv-by" data-reveal style="--reveal-delay:340ms">
+            <p class="tv-name">by {interview.presenter}</p>
+            <p class="tv-date">{interview.date}</p>
+          </div>
+        )}
       </div>
       <figure class="tv-shot" data-reveal data-from="left" style="--reveal-delay:120ms">
         <div data-parallax data-speed-x="720" data-speed-y="0">
@@ -50,24 +71,26 @@ const interview = {
     </div>
   </section>
 
-  <!-- 2 · AGENDA --------------------------------------------------------- -->
-  <section id="agenda" class="scene scene--full snap" aria-labelledby="agenda-title">
-    <div class="scene-inner">
-      <p id="agenda-title" class="eyebrow agenda-eyebrow" data-reveal>Agenda</p>
-      <ol class="agenda">
-        {interview.agenda.map((item, i) => (
-          <li data-reveal style={`--reveal-delay:${120 + i * 110}ms`}>
-            <span class="agenda-num">{i + 1}</span>
-            <span class="agenda-text">
-              <span class="agenda-time">{item.time}</span>
-              <span class="agenda-item">{item.title}</span>
-              {item.sub && <span class="agenda-sub">{item.sub}</span>}
-            </span>
-          </li>
-        ))}
-      </ol>
-    </div>
-  </section>
+  <!-- 2 · AGENDA (interview mode only) ----------------------------------- -->
+  {showInterview && (
+    <section id="agenda" class="scene scene--full snap" aria-labelledby="agenda-title">
+      <div class="scene-inner">
+        <p id="agenda-title" class="eyebrow agenda-eyebrow" data-reveal>Agenda</p>
+        <ol class="agenda">
+          {interview.agenda.map((item, i) => (
+            <li data-reveal style={`--reveal-delay:${120 + i * 110}ms`}>
+              <span class="agenda-num">{i + 1}</span>
+              <span class="agenda-text">
+                <span class="agenda-time">{item.time}</span>
+                <span class="agenda-item">{item.title}</span>
+                {item.sub && <span class="agenda-sub">{item.sub}</span>}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  )}
 
   <!-- 3 · THESIS HERO ---------------------------------------------------- -->
   <section class="scene scene--full snap hero" aria-labelledby="thesis-title">
