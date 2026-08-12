@@ -15,7 +15,7 @@ export const slides: DeckSlide[] = [
     eyebrow: "Leading designers",
     title: "Leading designers, not just designs",
     lede:
-      "I directed the work of 8 product designers, both full-time and contract, across two business units, keeping quality high and decisions durable across teams. I led design reviews, unblocked designers, and pushed the work toward platform-level thinking. Two of the contractors I mentored were converted to full-time, which is the outcome I'm proudest of.",
+      "I directed the work of 8 product designers, both full-time and contract, across two business units, keeping quality high and decisions durable across teams. I led design reviews, unblocked designers, and pushed the work toward platform-level thinking. Three of the contractors I mentored were converted to full-time, which is the outcome I'm proudest of.",
     comp: "jdartifacts",
   },
   {
