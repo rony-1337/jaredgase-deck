@@ -164,8 +164,9 @@ const notesData = slides.map((s, i) => ({
      notes window (data-present). Off the bottom-right corner, which the global
      mode toggle owns. -->
 {hasNotes && (
-  <button class="notes-dock" type="button" data-present aria-label="Open speaker notes">
-    <span class="notes-dock-icon" aria-hidden="true">
+  <div class="notes-dock">
+    <button class="notes-tab" type="button" data-present aria-label="Open speaker notes">
+    <span class="notes-tab-icon" aria-hidden="true">
       <svg width="21" height="21" viewBox="0 0 40 40" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
         <path d="M24.8655 14.5284C24.8655 14.0895 24.5234 13.7329 24.1024 13.7329H5.68308C5.26203 13.7329 4.91992 14.0895 4.91992 14.5284C4.91992 14.9691 5.26203 15.324 5.68308 15.324H24.1007C24.5234 15.324 24.8655 14.9674 24.8655 14.5284Z" />
         <path d="M23.0359 20.9374C23.0359 20.4985 22.6938 20.1419 22.2728 20.1419L5.67917 20.1401C5.25812 20.1401 4.91602 20.4968 4.91602 20.9357C4.91602 21.3763 5.25812 21.7312 5.67917 21.7312H22.2711C22.6938 21.7329 23.0359 21.3763 23.0359 20.9374Z" />
@@ -175,8 +176,9 @@ const notesData = slides.map((s, i) => ({
         <path d="M39.9676 12.9649C39.8656 12.3134 39.5252 11.7424 39.012 11.3567L36.2176 9.26326C35.1584 8.47285 33.6732 8.72145 32.9051 9.82735L21.8576 25.8566C21.2063 26.8013 20.8543 27.9158 20.8411 29.0817L20.7852 33.6012C20.7819 33.8618 20.9004 34.107 21.1027 34.2579C21.2342 34.3556 21.3905 34.407 21.5484 34.407C21.6323 34.407 21.7194 34.3933 21.8017 34.3625L25.8954 32.8674C26.9513 32.4817 27.8526 31.7787 28.504 30.834L39.5515 14.8065C39.9216 14.2715 40.0696 13.6164 39.9676 12.9649ZM27.262 29.9063C26.7948 30.5852 26.1468 31.0893 25.3886 31.3653L22.3261 32.4849L22.3656 29.1022C22.3771 28.2655 22.6288 27.4631 23.0975 26.7876L32.2078 13.5722L36.3723 16.6909L27.262 29.9063ZM38.3112 13.877L37.2635 15.396L33.099 12.2756L34.1467 10.7565C34.3112 10.5182 34.5711 10.3913 34.8326 10.3913C35.0036 10.3913 35.1763 10.4445 35.3244 10.5559L38.1188 12.6494C38.303 12.7865 38.423 12.9888 38.4592 13.222C38.4954 13.4535 38.4428 13.6867 38.3112 13.877Z" />
       </svg>
     </span>
-    <span class="notes-dock-label">Presenters notes</span>
-  </button>
+    <span class="notes-tab-label">Presenters notes</span>
+    </button>
+  </div>
 )}
 
 {hasNotes && (
@@ -659,13 +661,20 @@ const notesData = slides.map((s, i) => ({
     line-height: 1.55; color: var(--ink-soft); max-width: none;
   }
 
-  /* presenter control: a labeled tab docked at the middle-left edge. It peeks a
-     few px at rest; on hover / keyboard focus the whole tab slides fully out.
-     The tab itself is the button (data-present) — clicking opens the notes
-     window. The bottom-right corner is reserved for the global mode toggle. */
+  /* presenter control. A STATIONARY hover zone (.notes-dock) holds a sliding
+     TAB (.notes-tab). Because the zone never moves, the hitbox is stable no
+     matter how the tab animates — hovering the zone (or focusing the tab)
+     slides the tab out, and the tab can even dip IN first without the trigger
+     slipping out from under the cursor (which was causing the hover flicker).
+     The zone's box is the tab's extended footprint. Tab is the button
+     (data-present opens the notes window). Bottom-right belongs to the toggle. */
   .notes-dock {
     position: fixed; left: 0; top: 50%;
     z-index: 55;
+    transform: translateY(-50%);
+    display: inline-block;          /* shrink-wrap the tab's footprint = hit area */
+  }
+  .notes-tab {
     display: inline-flex; align-items: center; gap: var(--s-2);
     padding: 11px 18px 11px 13px;
     font-family: var(--font-sans); font-size: 0.82rem; font-weight: 500;
@@ -679,21 +688,21 @@ const notesData = slides.map((s, i) => ({
     box-shadow: 0 8px 20px -12px rgba(17, 21, 28, 0.4);
     cursor: pointer;
     /* rest: the whole tab sits off-screen except a ~16px sliver */
-    transform: translate(calc(-100% + 16px), -50%);
+    transform: translateX(calc(-100% + 16px));
     /* retract (mouse-out): plain ease back in */
     transition: transform 0.4s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease);
   }
-  .notes-dock:hover,
-  .notes-dock:focus-visible {
-    transform: translate(0, -50%);     /* the whole tab pulls out */
+  .notes-dock:hover .notes-tab,
+  .notes-dock:focus-within .notes-tab {
+    transform: translateX(0);          /* the whole tab pulls out */
     color: var(--accent-ink);
     border-color: color-mix(in srgb, var(--accent-ink) 35%, transparent);
     /* pull-out: slower, and dips slightly IN first (negative first control
        point) before sliding out and decelerating to rest */
     transition: transform 0.52s cubic-bezier(0.5, -0.35, 0.3, 1), color 0.15s var(--ease), border-color 0.15s var(--ease);
   }
-  .notes-dock-icon { display: grid; place-items: center; flex: none; }
-  .notes-dock-label { line-height: 1; }
+  .notes-tab-icon { display: grid; place-items: center; flex: none; }
+  .notes-tab-label { line-height: 1; }
   /* narrow viewports: hide the dock so it can't overlap content */
   @media (max-width: 40rem) { .notes-dock { display: none; } }
 
