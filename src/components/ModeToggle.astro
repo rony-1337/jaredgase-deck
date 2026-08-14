@@ -1,0 +1,14 @@
+---
+// Cross-site mode toggle. Mirrors the segmented control on jaredgase.com so the
+// two sites read as one product. On the deck, "Presentation" is the active
+// (highlighted) segment; "Normal" links back to the main site.
+//
+// Rendered from Base.astro on every route, so it persists across the whole
+// deck domain. Styles live in global.css (not scoped here) so the active-pill
+// brand blue can't go stale. The deck has no client router / view transitions,
+// so no transition:persist is needed — it simply re-renders identically.
+---
+<div class="mode-fab" role="group" aria-label="View mode">
+  <a class="mode-seg" href="https://jaredgase.com">Normal</a>
+  <span class="mode-seg active" aria-current="true">Presentation</span>
+</div>

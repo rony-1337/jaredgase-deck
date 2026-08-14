@@ -20,6 +20,7 @@
   --accent:     #1e54e8;   /* the one accent: electric, professional */
   --accent-ink: #163fb0;   /* accent text on light, AA on white */
   --accent-wash:#eef2fe;   /* tint behind accent moments */
+  --brand-blue: #2A88BA;   /* shared cross-site logo blue: mode-toggle active pill (keep exact, matches jaredgase.com) */
 
   /* deep navy: the dark dividers/showcases that punctuate the public flow */
   --navy:       #13314f;   /* dark surface */
@@ -251,6 +252,42 @@ html:has(body.is-deck) {
 @media (max-width: 40rem) {
   .deck-frame { display: none; }
 }
+
+/* Cross-site mode toggle — pinned bottom-right, persistent on every route.
+   Mirrors the segmented control on jaredgase.com so the two sites read as one.
+   Geometry matches that control; surface/border follow the deck theme, but the
+   active pill stays the exact shared brand blue. Defined here (global, not
+   page-scoped) so the color can never go stale. */
+/* Authoritative px values measured from the live jaredgase.com toggle. Kept in
+   px (not rem) so they render identically regardless of the deck's root
+   font-size, and using Almarai 400 (loaded in Base.astro) to match the type. */
+.mode-fab {
+  position: fixed;
+  right: clamp(22.5px, 4vw, 54px);
+  bottom: clamp(22.5px, 4vw, 45px);
+  z-index: 90;
+  display: flex;
+  gap: 3.6px;
+  padding: 5.4px;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 999px;
+  box-shadow: 0 10px 24px -14px rgba(20, 40, 60, 0.4);
+}
+.mode-seg {
+  font-family: 'Almarai', sans-serif;
+  font-size: 14.4px;
+  font-weight: 400;
+  line-height: 23.04px;   /* measured from live jaredgase.com (1.6×); sets the pill height */
+  color: #666666;
+  text-decoration: none;
+  padding: 8.1px 18px;
+  border-radius: 999px;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.mode-seg:hover { color: #2A88BA; background: #f1f3f5; }
+.mode-seg.active,
+.mode-seg.active:hover { color: #ffffff; background: #2A88BA; }
 
 /* Bracketed micro-label from the reference left rail: [BUILD], [STACK]. */
 .tag {
