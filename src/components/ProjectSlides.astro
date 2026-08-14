@@ -158,12 +158,13 @@ const notesData = slides.map((s, i) => ({
   );
 })}
 
-<!-- presenter control (only on decks that carry notes). Docked to the middle-
-     left edge as a small icon; hover or keyboard focus slides out a panel with
-     the Present control. Moved off the bottom-right corner, which is now
-     reserved for the global mode toggle. -->
+<!-- presenter control (only on decks that carry notes). A labeled tab docked at
+     the middle-left edge: peeks a few px at rest, and on hover / keyboard focus
+     the whole tab slides out and IS the button — clicking it opens the speaker-
+     notes window (data-present). Off the bottom-right corner, which the global
+     mode toggle owns. -->
 {hasNotes && (
-  <div class="notes-dock" tabindex="0" aria-label="Presenter notes">
+  <button class="notes-dock" type="button" data-present aria-label="Open speaker notes">
     <span class="notes-dock-icon" aria-hidden="true">
       <svg width="21" height="21" viewBox="0 0 40 40" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
         <path d="M24.8655 14.5284C24.8655 14.0895 24.5234 13.7329 24.1024 13.7329H5.68308C5.26203 13.7329 4.91992 14.0895 4.91992 14.5284C4.91992 14.9691 5.26203 15.324 5.68308 15.324H24.1007C24.5234 15.324 24.8655 14.9674 24.8655 14.5284Z" />
@@ -174,16 +175,8 @@ const notesData = slides.map((s, i) => ({
         <path d="M39.9676 12.9649C39.8656 12.3134 39.5252 11.7424 39.012 11.3567L36.2176 9.26326C35.1584 8.47285 33.6732 8.72145 32.9051 9.82735L21.8576 25.8566C21.2063 26.8013 20.8543 27.9158 20.8411 29.0817L20.7852 33.6012C20.7819 33.8618 20.9004 34.107 21.1027 34.2579C21.2342 34.3556 21.3905 34.407 21.5484 34.407C21.6323 34.407 21.7194 34.3933 21.8017 34.3625L25.8954 32.8674C26.9513 32.4817 27.8526 31.7787 28.504 30.834L39.5515 14.8065C39.9216 14.2715 40.0696 13.6164 39.9676 12.9649ZM27.262 29.9063C26.7948 30.5852 26.1468 31.0893 25.3886 31.3653L22.3261 32.4849L22.3656 29.1022C22.3771 28.2655 22.6288 27.4631 23.0975 26.7876L32.2078 13.5722L36.3723 16.6909L27.262 29.9063ZM38.3112 13.877L37.2635 15.396L33.099 12.2756L34.1467 10.7565C34.3112 10.5182 34.5711 10.3913 34.8326 10.3913C35.0036 10.3913 35.1763 10.4445 35.3244 10.5559L38.1188 12.6494C38.303 12.7865 38.423 12.9888 38.4592 13.222C38.4954 13.4535 38.4428 13.6867 38.3112 13.877Z" />
       </svg>
     </span>
-    <div class="notes-panel">
-      <p class="notes-panel-label">Presenter</p>
-      <button class="present-btn" type="button" data-present aria-label="Open speaker notes window">
-        <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-          <path d="M2 3h12v8H9l1.5 2.5M9 11l-1 2.5M2 6h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-        </svg>
-        <span>Present</span>
-      </button>
-    </div>
-  </div>
+    <span class="notes-dock-label">Presenters notes</span>
+  </button>
 )}
 
 {hasNotes && (
@@ -666,66 +659,37 @@ const notesData = slides.map((s, i) => ({
     line-height: 1.55; color: var(--ink-soft); max-width: none;
   }
 
-  /* persistent present button */
-  /* presenter affordance, docked to the middle-left edge. A small icon that
-     reveals a panel (holding the Present control) on hover / keyboard focus.
-     The bottom-right corner is reserved for the global mode toggle. */
+  /* presenter control: a labeled tab docked at the middle-left edge. It peeks a
+     few px at rest; on hover / keyboard focus the whole tab slides fully out.
+     The tab itself is the button (data-present) — clicking opens the notes
+     window. The bottom-right corner is reserved for the global mode toggle. */
   .notes-dock {
     position: fixed; left: 0; top: 50%;
     z-index: 55;
-    transform: translateY(-50%);
-  }
-  .notes-dock-icon {
-    display: grid; place-items: center;
-    width: 46px; height: 50px;
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    padding: 11px 18px 11px 13px;
+    font-family: var(--font-sans); font-size: 0.82rem; font-weight: 500;
+    white-space: nowrap; text-align: left;
     color: var(--ink-soft);
-    background: color-mix(in srgb, #ffffff 82%, transparent);
+    background: color-mix(in srgb, #ffffff 88%, transparent);
     backdrop-filter: saturate(1.3) blur(14px);
     -webkit-backdrop-filter: saturate(1.3) blur(14px);
     border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
     border-left: none; border-radius: 0 12px 12px 0;
     box-shadow: 0 8px 20px -12px rgba(17, 21, 28, 0.4);
     cursor: pointer;
-    /* rest state: the whole tab sits off-screen except a ~6px sliver */
-    transform: translateX(-40px);
-    transition: transform 0.24s var(--ease), color 0.15s var(--ease);
+    /* rest: the whole tab sits off-screen except a ~16px sliver */
+    transform: translate(calc(-100% + 16px), -50%);
+    transition: transform 0.26s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease);
   }
-  .notes-dock:hover .notes-dock-icon,
-  .notes-dock:focus-within .notes-dock-icon {
-    transform: translateX(0);          /* whole box pushes out on hover/focus */
+  .notes-dock:hover,
+  .notes-dock:focus-visible {
+    transform: translate(0, -50%);     /* the whole tab pulls out */
     color: var(--accent-ink);
+    border-color: color-mix(in srgb, var(--accent-ink) 35%, transparent);
   }
-  .notes-panel {
-    position: absolute; left: 100%; top: 50%;
-    width: 260px; padding: var(--s-4);
-    background: color-mix(in srgb, #ffffff 92%, transparent);
-    backdrop-filter: saturate(1.3) blur(14px);
-    -webkit-backdrop-filter: saturate(1.3) blur(14px);
-    border: 1px solid var(--line); border-radius: 12px;
-    box-shadow: 0 16px 40px -20px rgba(17, 21, 28, 0.5);
-    opacity: 0; transform: translate(-8px, -50%); pointer-events: none;
-    transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
-  }
-  .notes-dock:hover .notes-panel,
-  .notes-dock:focus-within .notes-panel {
-    opacity: 1; transform: translate(0, -50%); pointer-events: auto;
-  }
-  .notes-panel-label {
-    font-family: var(--font-mono); font-size: var(--t-label);
-    letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--ink-faint); margin-bottom: var(--s-3);
-  }
-  .present-btn {
-    display: inline-flex; align-items: center; gap: var(--s-2);
-    padding: var(--s-3) var(--s-4);
-    font-family: var(--font-mono); font-size: var(--t-label);
-    letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--ink); background: var(--surface);
-    border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
-    border-radius: 999px; cursor: pointer;
-    transition: color 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.15s var(--ease);
-  }
-  .present-btn:hover { color: var(--accent-ink); border-color: var(--accent-ink); transform: translateY(-1px); }
+  .notes-dock-icon { display: grid; place-items: center; flex: none; }
+  .notes-dock-label { line-height: 1; }
   /* narrow viewports: hide the dock so it can't overlap content */
   @media (max-width: 40rem) { .notes-dock { display: none; } }
 
