@@ -680,13 +680,17 @@ const notesData = slides.map((s, i) => ({
     cursor: pointer;
     /* rest: the whole tab sits off-screen except a ~16px sliver */
     transform: translate(calc(-100% + 16px), -50%);
-    transition: transform 0.26s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease);
+    /* retract (mouse-out): plain ease back in */
+    transition: transform 0.4s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease);
   }
   .notes-dock:hover,
   .notes-dock:focus-visible {
     transform: translate(0, -50%);     /* the whole tab pulls out */
     color: var(--accent-ink);
     border-color: color-mix(in srgb, var(--accent-ink) 35%, transparent);
+    /* pull-out: slower, and dips slightly IN first (negative first control
+       point) before sliding out and decelerating to rest */
+    transition: transform 0.52s cubic-bezier(0.5, -0.35, 0.3, 1), color 0.15s var(--ease), border-color 0.15s var(--ease);
   }
   .notes-dock-icon { display: grid; place-items: center; flex: none; }
   .notes-dock-label { line-height: 1; }
