@@ -3,6 +3,7 @@ import Base from "../layouts/Base.astro";
 import DeckChrome from "../components/DeckChrome.astro";
 import ParallaxScript from "../components/ParallaxScript.astro";
 import ProjectSection from "../components/ProjectSection.astro";
+import PhotoDecor from "../components/PhotoDecor.astro";
 import { pillars } from "../data/pillars";
 
 // one icon per principle, in the same order as the pillars array
@@ -25,16 +26,23 @@ const logoFor = (name: string) =>
   ["svg", "png"].map((e) => `/img/journey/logos/${name}.${e}`)
     .find((p) => existsSync(join(process.cwd(), "public", p))) ?? null;
 
+// floating "bubble" logos that orbit the photo on certain about-me slides
+const lb = "/img/about-logos";
 const homeSlides = [
-  { fact: bio.home.facts[0], img: "/img/about/about_family.jpg", alt: "Jared with his three boys" },
-  { fact: bio.home.facts[1], img: "/img/about/about_pc-build.jpg", alt: "A custom PC build in progress" },
-  { fact: bio.home.facts[2], img: "/img/about/about_501st.jpg", alt: "Jared volunteering in 501st Legion costume" },
+  { fact: bio.home.facts[0], img: "/img/about/about_family.jpg", alt: "Jared with his three boys",
+    logos: [`${lb}/fam_01_Nintendo-logo.png`, `${lb}/fam_02_Pokenom-logo.png`, `${lb}/fam_03_Padres-logo.png`] },
+  { fact: bio.home.facts[1], img: "/img/about/about_pc-build.jpg", alt: "A custom PC build in progress",
+    logos: [`${lb}/nerd_01_Plex-logo.png`, `${lb}/nerd_02_Synology-logo.png`, `${lb}/nerd_03_UI-logo.png`] },
+  { fact: bio.home.facts[2], img: "/img/about/about_501st.jpg", alt: "Jared volunteering in 501st Legion costume",
+    logos: [`${lb}/troop_01_501st-logo.png`, `${lb}/troop_02_SDCC-logo.png`, `${lb}/troop_03_ISG-logo.png`] },
 ];
 const workSlides = [
-  { fact: bio.work.facts[0], img: "/img/about/about_creative-studio.jpg", alt: "Creative Studio craft programming" },
-  { fact: bio.work.facts[1], img: "/img/about/about_design-trek.jpg", alt: "SD Design Trek company visit" },
-  { fact: bio.work.facts[2], img: "/img/about/about_speakeasy.jpg", alt: "UX Speakeasy event at Intuit" },
-  { fact: bio.work.facts[3], img: null, alt: null },
+  { fact: bio.work.facts[0], img: "/img/about/about_creative-studio.jpg", alt: "Creative Studio craft programming", logos: null },
+  { fact: bio.work.facts[1], img: "/img/about/about_design-trek.jpg", alt: "SD Design Trek company visit",
+    logos: [`${lb}/design_01_SD-Design-Trek-logo.png`, `${lb}/design_04_FoF-logo.png`] },
+  { fact: bio.work.facts[2], img: "/img/about/about_speakeasy.jpg", alt: "UX Speakeasy event at Intuit",
+    logos: [`${lb}/design_03_UX-Speakeasy-logo.png`, `${lb}/design_02_SDXD-logo.png`] },
+  { fact: bio.work.facts[3], img: null, alt: null, logos: null },
 ];
 
 // the career arc, from the first design job to today. Each stage carries a
@@ -89,6 +97,14 @@ const pad = (n: number) => String(n).padStart(2, "0");
       <div class={`scene-inner statement-grid ${i % 2 === 1 ? "is-right" : ""}`}>
         <figure class="statement-figure" data-reveal data-from={i % 2 === 1 ? "right" : "left"}>
           <img src={s.img} alt={s.alt} width="800" height="1000" loading="lazy" />
+          {s.logos && (
+            <ul class="fig-bubbles" aria-hidden="true">
+              {s.logos.map((l, k) => (
+                <li class="bubble" style={`--i:${k}`}><img src={l} alt="" loading="lazy" /></li>
+              ))}
+            </ul>
+          )}
+          <PhotoDecor />
         </figure>
         <div class="statement-text">
           <p class="eyebrow" data-reveal data-from={i % 2 === 1 ? "left" : "right"}>At home · {pad(i + 1)}</p>
@@ -113,6 +129,14 @@ const pad = (n: number) => String(n).padStart(2, "0");
         <div class={`scene-inner statement-grid ${i % 2 === 1 ? "is-right" : ""}`}>
           <figure class="statement-figure" data-reveal data-from={i % 2 === 1 ? "right" : "left"}>
             <img src={s.img} alt={s.alt} width="800" height="1000" loading="lazy" />
+            {s.logos && (
+              <ul class="fig-bubbles" aria-hidden="true">
+                {s.logos.map((l, k) => (
+                  <li class="bubble" style={`--i:${k}`}><img src={l} alt="" loading="lazy" /></li>
+                ))}
+              </ul>
+            )}
+            <PhotoDecor />
           </figure>
           <div class="statement-text">
             <p class="eyebrow" data-reveal data-from={i % 2 === 1 ? "left" : "right"}>In the community · {pad(i + 1)}</p>
@@ -284,6 +308,38 @@ const pad = (n: number) => String(n).padStart(2, "0");
 </Base>
 
 <style>
+  /* about-me photos: floating "bubble" logos orbiting the portrait ---------- */
+  .statement-figure { overflow: visible; position: relative; }  /* let bubbles spill past the frame */
+  .statement-figure > img { border-radius: var(--radius); }     /* keep the photo's rounded corners */
+  .fig-bubbles {
+    position: absolute; inset: 0; margin: 0; padding: 0;
+    list-style: none; pointer-events: none; z-index: 2;
+  }
+  .bubble {
+    position: absolute;
+    width: clamp(68px, 7.8vw, 116px); aspect-ratio: 1;
+    display: grid; place-items: center;
+    background: #fff; border: 1px solid var(--line);
+    border-radius: 50%;
+    box-shadow: 0 16px 32px -12px rgba(17, 21, 28, 0.44);
+    animation: bubble-float calc(3.3s + var(--i, 0) * 0.6s) ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * -0.7s);
+  }
+  .bubble img { width: 60%; height: 60%; object-fit: contain; }
+  /* scatter around the portrait's perimeter */
+  .bubble:nth-child(1) { top: 1%;    right: -9%; }
+  .bubble:nth-child(2) { top: 40%;   left: -11%; }
+  .bubble:nth-child(3) { bottom: 1%; right: -7%; }
+  @keyframes bubble-float {
+    0%, 100% { transform: translate(0, 0) rotate(-5deg); }
+    30%      { transform: translate(6px, -19px) rotate(5deg); }
+    60%      { transform: translate(-5px, -9px) rotate(-3deg); }
+  }
+  @media (prefers-reduced-motion: reduce) { .bubble { animation: none; } }
+  @media (max-width: 48rem) {
+    .fig-bubbles { display: none; }   /* avoid crowding the stacked mobile layout */
+  }
+
   /* how I think: one principle per horizontal panel */
   .think-stage {
     width: 100%; max-width: var(--container); margin-inline: auto;
