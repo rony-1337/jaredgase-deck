@@ -13,8 +13,11 @@ interface Props {
   title?: string;
   /** show the "01 / 09" counter beside each eyebrow (off for explainer decks) */
   counter?: boolean;
+  /** starting scene index; set when a second deck shares the page so the
+      presenter-popup observer keeps unique indices across both decks */
+  idxOffset?: number;
 }
-const { slides, title = "Speaker notes", counter = true } = Astro.props;
+const { slides, title = "Speaker notes", counter = true, idxOffset = 0 } = Astro.props;
 const pad = (n: number) => String(n).padStart(2, "0");
 const isVideo = (u: string) => /\.(mp4|webm|mov)$/i.test(u);
 
@@ -40,7 +43,7 @@ const notesData = slides.map((s, i) => ({
   return (
     <section
       class="scene scene--full snap slide-scene"
-      data-slide-idx={i}
+      data-slide-idx={idxOffset + i}
       aria-label={`Slide ${i + 1}: ${s.title}`}
     >
       <div class="scene-inner">

@@ -1,9 +1,6 @@
 ---
 import Base from "../../layouts/Base.astro";
-import ProjectSlides from "../../components/ProjectSlides.astro";
-import ParallaxScript from "../../components/ParallaxScript.astro";
 import { getCollection } from "astro:content";
-import { slides as kitSlides } from "../../data/slides/kit";
 
 const all = (await getCollection("projects")).sort(
   (a, b) => a.data.order - b.data.order
@@ -71,19 +68,6 @@ const tagsOf = (p: any) =>
     </div>
   </section>
 
-  <section class="container block">
-    <div class="more-head">
-      <h2 class="more-title">Also in the kit</h2>
-      <p class="more-note">
-        The through-line behind the case studies: how I drive strategy, scale
-        design, and build the culture that keeps both going.
-      </p>
-    </div>
-  </section>
-
-  <ProjectSlides slides={kitSlides} title="Also in the kit · Speaker notes" />
-
-  <ParallaxScript />
 </Base>
 
 <style>
@@ -178,16 +162,5 @@ const tagsOf = (p: any) =>
   }
   @media (max-width: 40rem) {
     .study-grid { grid-template-columns: 1fr; }
-  }
-  .more-head {
-    margin-top: var(--s-8);
-    margin-bottom: var(--s-6);
-  }
-  .more-title {
-    font-size: var(--t-h2);
-  }
-  .more-note {
-    margin-top: var(--s-2);
-    color: var(--ink-soft);
   }
 </style>

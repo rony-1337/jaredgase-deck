@@ -7,6 +7,7 @@ import ProjectSection from "../components/ProjectSection.astro";
 import { getCollection } from "astro:content";
 import { slides as aboutMeSlides } from "../data/slides/about-me";
 import { slides as vepSlides } from "../data/slides/about-vep";
+import { slides as kitSlides } from "../data/slides/kit";
 import "../styles/deck.css";
 
 // the panel runs as one deck: who I am, then what VEP is
@@ -30,6 +31,17 @@ const workProjects = workSlugs
   <div class="deck-frame" aria-hidden="true"></div>
 
   <ProjectSlides slides={panelSlides} counter={false} />
+
+  <!-- ALSO IN THE KIT ----------------------------------------------------- -->
+  <section class="scene scene--full snap on-navy act-divider" aria-labelledby="pn-kit">
+    <div class="scene-inner">
+      <p class="eyebrow" data-reveal>Beyond the work</p>
+      <h2 id="pn-kit" class="act-title" data-reveal style="--reveal-delay:80ms">The through-line.</h2>
+      <p class="act-lede" data-reveal style="--reveal-delay:180ms">How I drive strategy, scale design, and build the culture that keeps both going.</p>
+    </div>
+  </section>
+
+  <ProjectSlides slides={kitSlides} counter={false} idxOffset={panelSlides.length} />
 
   <!-- SELECTED WORK ------------------------------------------------------- -->
   <section class="scene scene--full snap on-navy act-divider" aria-labelledby="pn-work">
