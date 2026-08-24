@@ -1,14 +1,43 @@
 ---
 // Cross-site mode toggle. Mirrors the segmented control on jaredgase.com so the
 // two sites read as one product. On the deck, "Presentation" is the active
-// (highlighted) segment; "Normal" links back to the main site.
+// (highlighted) segment; "Normal" jumps back to the main site.
 //
-// Rendered from Base.astro on every route, so it persists across the whole
-// deck domain. Styles live in global.css (not scoped here) so the active-pill
-// brand blue can't go stale. The deck has no client router / view transitions,
-// so no transition:persist is needed — it simply re-renders identically.
+// "Normal" is page-aware: it links to the *matching* page on jaredgase.com
+// (falling back to the site root). The deck is a static MPA — every route is a
+// fresh load — so the correct href is computed here at render time and is never
+// stale. The script below re-affirms it on astro:page-load too, so it keeps
+// working if view transitions / a client router are ever added.
+//
+// Rendered from Base.astro on every route. Styles live in global.css (not
+// scoped here) so the active-pill brand blue can't go stale.
+const SITE = "https://jaredgase.com";
+// deck path (no trailing slash) -> jaredgase.com URL (trailing slash = canonical)
+const SITE_MAP: Record<string, string> = {
+  "": SITE + "/", // deck root -> home
+  "/overview": SITE + "/about/",
+  "/case-studies": SITE + "/work/",
+  "/case-studies/ai-native": SITE + "/work/ai-native-iep/",
+  "/case-studies/human-intervention-agent": SITE + "/work/agentic-support/",
+  "/case-studies/concierge": SITE + "/work/turbotax-concierge/",
+  "/case-studies/salesforce-to-iep": SITE + "/work/expert-migration/",
+  // /panel and anything else -> SITE root (default)
+};
+const path = Astro.url.pathname.replace(/\/+$/, ""); // strip trailing slash; "/" -> ""
+const normalHref = SITE_MAP[path] ?? SITE + "/";
 ---
 <div class="mode-fab" role="group" aria-label="View mode">
-  <a class="mode-seg" href="https://jaredgase.com">Normal</a>
+  <a class="mode-seg" data-normal-link href={normalHref}>Normal</a>
   <span class="mode-seg active" aria-current="true">Presentation</span>
 </div>
+
+<script define:vars={{ SITE, SITE_MAP }}>
+  function updateNormalLink() {
+    const link = document.querySelector("[data-normal-link]");
+    if (!link) return;
+    const path = location.pathname.replace(/\/+$/, ""); // strip trailing slash; "/" -> ""
+    link.setAttribute("href", SITE_MAP[path] || SITE + "/");
+  }
+  document.addEventListener("astro:page-load", updateNormalLink);
+  updateNormalLink();
+</script>
