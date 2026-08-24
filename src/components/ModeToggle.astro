@@ -23,7 +23,13 @@ const SITE_MAP: Record<string, string> = {
   "/case-studies/salesforce-to-iep": SITE + "/work/expert-migration/",
   // /panel and anything else -> SITE root (default)
 };
-const path = Astro.url.pathname.replace(/\/+$/, ""); // strip trailing slash; "/" -> ""
+// Normalize to a clean path key. In the static build (build.format:"file")
+// Astro.url.pathname is ".html"-suffixed (e.g. "/overview.html"), while dev/
+// browser use clean paths — strip .html and any trailing slash so both match.
+const path = Astro.url.pathname
+  .replace(/index\.html$/, "")
+  .replace(/\.html$/, "")
+  .replace(/\/+$/, "");
 const normalHref = SITE_MAP[path] ?? SITE + "/";
 ---
 <div class="mode-fab" role="group" aria-label="View mode">
