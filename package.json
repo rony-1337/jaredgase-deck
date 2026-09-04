@@ -10,15 +10,19 @@
     "dev": "astro dev",
     "prestart": "npm run clean:store",
     "start": "astro dev",
-    "prebuild": "npm run clean:store",
+    "prebuild": "npm run clean:store && npm run build:catalog",
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "tailor": "node --experimental-strip-types scripts/tailor.ts"
+    "build:catalog": "node --experimental-strip-types scripts/build-catalog.ts",
+    "serve:tailor": "node --experimental-strip-types scripts/serve-tailor.ts",
+    "test:tailor": "node --experimental-strip-types scripts/test-tailor.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
     "astro": "^5.2.5",
-    "flubber": "^0.4.2"
+    "flubber": "^0.4.2",
+    "gray-matter": "^4.0.3"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",

@@ -13,4 +13,14 @@ export default defineConfig({
   devToolbar: {
     enabled: false,
   },
+  vite: {
+    server: {
+      // Local Customize builder: proxy /api to the local tailor server
+      // (scripts/serve-tailor.ts on :4326) so the browser stays same-origin.
+      // Dev-only; the production build is static and ignores this.
+      proxy: {
+        "/api": { target: "http://localhost:4326", changeOrigin: true },
+      },
+    },
+  },
 });

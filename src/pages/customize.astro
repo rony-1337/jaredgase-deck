@@ -23,102 +23,122 @@ import { personas } from "../data/personas";
       <div class="field-grid">
         <label class="field">
           <span class="field-label">Company</span>
-          <input type="text" placeholder="Where are we interviewing?" />
-          <span class="field-hint">Logo pulls from the job link, with manual upload as backup.</span>
+          <input id="cz-company" type="text" placeholder="Where are we interviewing?" />
         </label>
 
         <label class="field">
           <span class="field-label">Role</span>
-          <input type="text" placeholder="The title on the posting" />
+          <input id="cz-role" type="text" placeholder="The title on the posting" />
         </label>
 
         <label class="field">
           <span class="field-label">Date</span>
-          <input type="date" />
+          <input id="cz-date" type="text" placeholder="e.g. Friday, August 7" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Length</span>
+          <select id="cz-length">
+            <option value="15">15 minutes</option>
+            <option value="30" selected>30 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+          <span class="field-hint">More time pulls in more projects.</span>
         </label>
 
         <label class="field">
           <span class="field-label">Audience</span>
-          <select>
+          <select id="cz-audience">
             {personas.map((p) => <option value={p.id}>{p.name}</option>)}
           </select>
-          <span class="field-hint">Sets the starting altitude and emphasis.</span>
+          <span class="field-hint">Sets the emphasis.</span>
         </label>
       </div>
 
       <label class="field">
         <span class="field-label">Job description link</span>
-        <input type="url" placeholder="Greenhouse, Lever, Ashby, or a plain careers page" />
-        <span class="field-hint">
-          Public links work when the text is in the page. Workday and LinkedIn often
-          need a paste instead.
-        </span>
+        <input id="cz-jdurl" type="url" placeholder="Greenhouse, Lever, Ashby, or a plain careers page" />
+        <span class="field-hint">Works when the text is in the page source. Workday and LinkedIn usually need a paste.</span>
       </label>
 
       <label class="field">
         <span class="field-label">Or paste the job description</span>
-        <textarea rows="5" placeholder="Paste the full posting here. This always works."></textarea>
+        <textarea id="cz-jdtext" rows="5" placeholder="Paste the full posting here. This always works."></textarea>
       </label>
 
       <button class="build-btn" id="buildBtn" type="button">Build presentation →</button>
+      <p class="build-status" id="buildStatus" role="status" hidden></p>
     </div>
 
-    <!-- what happens / demo log -->
+    <!-- what happens -->
     <div class="explain">
       <div class="explain-head">
         <h2 class="explain-title">What happens when you hit build</h2>
-        <span class="badge">Demo · live generation wires up next</span>
+        <span class="badge">Local · runs on your machine</span>
       </div>
       <p class="explain-body">
-        The job description gets read and classified. Then projects are selected and
-        ranked, the copy variant is chosen, and the panel is branded to the company.
-        Here is a sample run.
+        The job description is read and classified, projects are selected and ranked for
+        this role, the framing copy is rewritten to fit the posting, and the run is
+        branded to the company — then it opens as a live presentation.
       </p>
-
-      <pre class="log" id="log"><code>&gt; reading job description ............ ok
-&gt; company: Example Co ................ matched
-&gt; role: Staff Product Designer ....... ic / senior track
-&gt; signal: platform + systems ......... high
-&gt; signal: ai-native .................. high
-&gt; signal: zero-to-one ................ medium
-&gt; selecting from approved project set
-  · salesforce-to-iep .............. include  (rank 1)
-  · concierge ...................... include  (rank 2)
-  · salesforce-design-principles ... include  (rank 3)
-  · ai-strategy .................... include  (rank 4)
-&gt; copy variant ...................... panel / systems emphasis
-&gt; claims + metrics .................. locked, no free text
-&gt; build ready ....................... 0.8s</code></pre>
-
       <p class="safety">
-        Every line is the AI selecting and ranking from work I have already written
-        and approved. It never writes a claim or a number on its own. Nothing to
-        hallucinate in front of you.
+        Every number and metric stays exactly as written and vetted. The AI reorders and
+        rephrases from work already approved; it never writes a claim or a figure on its
+        own — anything ungrounded is reverted to the source automatically.
       </p>
     </div>
   </section>
 </Base>
 
 <script>
-  // Re-stage the demo log line by line so it feels live. Content is already in
-  // the DOM, so it stays readable with JavaScript off.
-  const btn = document.getElementById("buildBtn");
-  const log = document.getElementById("log");
-  if (btn && log) {
-    const original = log.innerHTML;
-    btn.addEventListener("click", () => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      log.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
-      if (reduce) return;
-      const lines = original.split("\n");
-      log.innerHTML = "";
-      lines.forEach((line, i) => {
-        setTimeout(() => {
-          log.innerHTML += (i ? "\n" : "") + line;
-        }, i * 110);
+  // Build handler: POST the form to the local tailor server (proxied at /api),
+  // stash the returned spec, and open the tailored run. The API key never
+  // touches this page — it lives only in the local server's env.
+  const $ = (id: string) => document.getElementById(id) as HTMLInputElement | null;
+  const btn = document.getElementById("buildBtn") as HTMLButtonElement | null;
+  const status = document.getElementById("buildStatus");
+
+  const setStatus = (msg: string, kind: "busy" | "ok" | "err") => {
+    if (!status) return;
+    status.hidden = false;
+    status.textContent = msg;
+    status.dataset.kind = kind;
+  };
+
+  btn?.addEventListener("click", async () => {
+    const company = $("cz-company")?.value.trim() ?? "";
+    const role = $("cz-role")?.value.trim() ?? "";
+    const date = $("cz-date")?.value.trim() ?? "";
+    const durationMin = Number($("cz-length")?.value) || 30;
+    const audience = $("cz-audience")?.value ?? "panel";
+    const jdUrl = $("cz-jdurl")?.value.trim() ?? "";
+    const jdText = ($("cz-jdtext") as unknown as HTMLTextAreaElement | null)?.value.trim() ?? "";
+
+    if (!company || !role) { setStatus("Add the company and role first.", "err"); return; }
+    if (jdText.length < 40 && !jdUrl) { setStatus("Paste the job description (or add a link).", "err"); return; }
+
+    btn.disabled = true;
+    setStatus("Reading the job description and tailoring the run… (~10–15s)", "busy");
+    try {
+      const res = await fetch("/api/tailor", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ company, role, date, durationMin, audience, jdUrl, jdText }),
       });
-    });
-  }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
+      sessionStorage.setItem("tailorSpec", JSON.stringify(data));
+      setStatus(`Built ${data.projects.length} project scenes. Opening your run…`, "ok");
+      location.href = "/tailored";
+    } catch (err: any) {
+      setStatus(
+        `${err?.message || err}  ·  Is the tailor server running? (npm run serve:tailor)`,
+        "err",
+      );
+      btn.disabled = false;
+    }
+  });
 </script>
 
 <style>
@@ -214,6 +234,16 @@ import { personas } from "../data/personas";
     transform: translateY(-1px);
     filter: brightness(1.08);
   }
+  .build-btn:disabled { opacity: 0.6; cursor: default; transform: none; filter: none; }
+  .build-status {
+    margin-top: var(--s-2);
+    font-family: var(--font-mono);
+    font-size: var(--t-small);
+    line-height: 1.45;
+  }
+  .build-status[data-kind="busy"] { color: var(--ink-soft); }
+  .build-status[data-kind="ok"] { color: var(--accent-ink); }
+  .build-status[data-kind="err"] { color: #e06666; }
 
   .explain {
     margin-top: var(--s-10);
