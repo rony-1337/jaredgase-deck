@@ -1,0 +1,41 @@
+---
+// Floating "bubble" logos that orbit a photo. Sized in container units (cqw) so
+// the same component works around a big overview portrait and the smaller panel
+// gallery photos. The parent must be `position: relative`, `overflow: visible`,
+// and `container-type: inline-size`.
+interface Props {
+  logos: string[];
+}
+const { logos } = Astro.props;
+---
+<ul class="pb" aria-hidden="true">
+  {logos.map((l, k) => (
+    <li class="pb-item" style={`--i:${k}`}><img src={l} alt="" loading="lazy" /></li>
+  ))}
+</ul>
+
+<style>
+  .pb { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; pointer-events: none; z-index: 3; }
+  .pb-item {
+    position: absolute;
+    width: clamp(44px, 24cqw, 116px); aspect-ratio: 1;
+    display: grid; place-items: center;
+    background: #fff; border: 1px solid var(--line);
+    border-radius: 50%;
+    box-shadow: 0 16px 32px -12px rgba(17, 21, 28, 0.44);
+    animation: pb-float calc(3.3s + var(--i, 0) * 0.6s) ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * -0.7s);
+  }
+  .pb-item img { width: 60%; height: 60%; object-fit: contain; }
+  /* scatter around the photo's perimeter */
+  .pb-item:nth-child(1) { top: 1%;    right: -9%; }
+  .pb-item:nth-child(2) { top: 40%;   left: -11%; }
+  .pb-item:nth-child(3) { bottom: 1%; right: -7%; }
+  @keyframes pb-float {
+    0%, 100% { transform: translate(0, 0) rotate(-5deg); }
+    30%      { transform: translate(6px, -19px) rotate(5deg); }
+    60%      { transform: translate(-5px, -9px) rotate(-3deg); }
+  }
+  @media (prefers-reduced-motion: reduce) { .pb-item { animation: none; } }
+  @media (max-width: 48rem) { .pb { display: none; } }
+</style>
