@@ -5,6 +5,8 @@
 // and a persistent "Present" button pops out a speaker-notes window that
 // follows along as the deck scrolls.
 import SlideComp from "./SlideComp.astro";
+import PhotoBubbles from "./PhotoBubbles.astro";
+import PhotoDecor from "./PhotoDecor.astro";
 import type { DeckSlide } from "../data/slides/types";
 
 interface Props {
@@ -109,7 +111,11 @@ const notesData = slides.map((s, i) => ({
             <ul class="slide-gallery" data-reveal style="--reveal-delay:200ms">
               {s.gallery!.map((g, k) => (
                 <li style={`--reveal-delay:${200 + k * 130}ms`}>
-                  <img src={g.img} alt={g.alt} loading="lazy" />
+                  <div class="gallery-photo">
+                    <img src={g.img} alt={g.alt} loading="lazy" />
+                    {g.logos && g.logos.length > 0 && <PhotoBubbles logos={g.logos} />}
+                    <PhotoDecor scale={0.6} />
+                  </div>
                   <p>{g.caption}</p>
                 </li>
               ))}
@@ -423,6 +429,8 @@ const notesData = slides.map((s, i) => ({
     margin-top: clamp(var(--s-5), 4vh, var(--s-8));
   }
   .slide-gallery li { position: relative; }
+  /* the photo is the orbit container for its logo bubbles + decor */
+  .slide-gallery .gallery-photo { position: relative; container-type: inline-size; }
   .slide-gallery li:nth-child(1) { z-index: 3; }
   .slide-gallery li:nth-child(2) { z-index: 2; }
   .slide-gallery li:nth-child(3) { z-index: 1; }

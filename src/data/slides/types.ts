@@ -20,6 +20,8 @@ export interface DeckSlideGalleryItem {
   img: string;
   alt: string;
   caption: string;
+  /** optional floating brand-logo bubbles that orbit this photo */
+  logos?: string[];
 }
 
 export interface DeckSlide {

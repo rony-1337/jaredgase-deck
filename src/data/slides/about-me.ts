@@ -4,6 +4,7 @@
 import type { DeckSlide } from "./types";
 
 const base = "/img/about";
+const lb = "/img/about-logos";
 
 export const slides: DeckSlide[] = [
   {
@@ -23,16 +24,19 @@ export const slides: DeckSlide[] = [
         img: `${base}/about_family.jpg`,
         alt: "Jared and his family in Pokémon costumes",
         caption: "Dad of three energetic boys who love Baseball, Pokémon, and Nintendo.",
+        logos: [`${lb}/fam_01_Nintendo-logo.png`, `${lb}/fam_02_Pokenom-logo.png`, `${lb}/fam_03_Padres-logo.png`],
       },
       {
         img: `${base}/about_pc-build.jpg`,
         alt: "A custom PC build in progress",
         caption: "Tech-loving nerd with an AA in Telecommunications.",
+        logos: [`${lb}/nerd_01_Plex-logo.png`, `${lb}/nerd_02_Synology-logo.png`, `${lb}/nerd_03_UI-logo.png`],
       },
       {
         img: `${base}/about_501st.jpg`,
         alt: "Jared volunteering in 501st Legion costume",
         caption: "501st cosplayer who volunteers as a “bad guy doing good.”",
+        logos: [`${lb}/troop_01_501st-logo.png`, `${lb}/troop_02_SDCC-logo.png`, `${lb}/troop_03_ISG-logo.png`],
       },
     ],
     notes:
@@ -47,6 +51,7 @@ export const slides: DeckSlide[] = [
         img: `${base}/about_design-trek.jpg`,
         alt: "SD Design Trek company visit",
         caption: "Co-Driver at SD DesignTrek, exploring design inside of local companies.",
+        logos: [`${lb}/design_01_SD-Design-Trek-logo.png`, `${lb}/design_04_FoF-logo.png`],
       },
       {
         img: `${base}/about_creative-studio.jpg`,
@@ -57,6 +62,7 @@ export const slides: DeckSlide[] = [
         img: `${base}/about_speakeasy.jpg`,
         alt: "UX Speakeasy event at Intuit",
         caption: "Hosted a UX Speakeasy event at Intuit to support the SD design community.",
+        logos: [`${lb}/design_03_UX-Speakeasy-logo.png`, `${lb}/design_02_SDXD-logo.png`],
       },
     ],
     notes:
