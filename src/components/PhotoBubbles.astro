@@ -1,13 +1,13 @@
 ---
 // Floating "bubble" logos that orbit a photo. Sized in container units (cqw) so
 // the same component works around a big overview portrait and the smaller panel
-// gallery photos. The parent must be `position: relative`, `overflow: visible`,
-// and `container-type: inline-size`.
+// gallery photos. Parent must be position:relative, overflow:visible,
+// container-type:inline-size.
 //
-// Each bubble floats on its OWN timeline — a unique duration, starting phase,
-// drift amplitude, and rotation — so no two ever move in sync. The values are
-// deterministically seeded from the logo path, so they're stable across renders
-// but different for every bubble.
+// Every bubble is independent: a randomly chosen motion PATH (six distinct
+// named keyframes, not one shared timeline), its own duration, starting phase,
+// and a scattered position around the photo's perimeter. All seeded from the
+// logo path so it's stable across renders but different for each bubble.
 interface Props {
   logos: string[];
 }
@@ -28,25 +28,41 @@ function seeded(str: string) {
   };
 }
 
+// perimeter anchor points (bubble's top-left corner, % of container) — spill out
+const ANCHORS = [
+  { top: -7, left: -8 }, // top-left
+  { top: -6, left: 80 }, // top-right
+  { top: 34, left: 88 }, // right
+  { top: 78, left: 76 }, // bottom-right
+  { top: 76, left: -10 }, // bottom-left
+  { top: 34, left: -13 }, // left
+];
+const VARIANTS = ["a", "b", "c", "d", "e", "f"];
+
+// seeded shuffle of the anchors for THIS photo, so each photo scatters differently
+const sh = seeded("anchor|" + logos.join("|"));
+const anchors = ANCHORS.map((a) => ({ a, k: sh() }))
+  .sort((x, y) => x.k - y.k)
+  .map((o) => o.a);
+
 const bubbles = logos.map((logo, i) => {
   const r = seeded(logo + "|" + i);
-  const dir = r() < 0.5 ? -1 : 1;
-  const sx = r() < 0.5 ? -1 : 1;
+  const a = anchors[i % anchors.length];
   return {
     logo,
-    dur: (3.4 + r() * 2.8).toFixed(2), // 3.4–6.2s
-    delay: (-(r() * 6)).toFixed(2), // -0 to -6s → random starting phase
-    dx: (sx * (5 + r() * 9)).toFixed(1), // ±5–14px
-    dy: (-(11 + r() * 13)).toFixed(1), // -11 to -24px (drifts up)
-    rot: (dir * (3 + r() * 6)).toFixed(1), // ±3–9deg
+    v: VARIANTS[Math.floor(r() * VARIANTS.length)],
+    dur: (3.6 + r() * 3.2).toFixed(2), // 3.6–6.8s
+    delay: (-(r() * 7)).toFixed(2), // random starting phase
+    top: (a.top + (r() * 10 - 5)).toFixed(1),
+    left: (a.left + (r() * 8 - 4)).toFixed(1),
   };
 });
 ---
 <ul class="pb" aria-hidden="true">
   {bubbles.map((b) => (
     <li
-      class="pb-item"
-      style={`--dur:${b.dur}s; --delay:${b.delay}s; --dx:${b.dx}px; --dy:${b.dy}px; --rot:${b.rot}deg;`}
+      class={`pb-item pb-${b.v}`}
+      style={`top:${b.top}%; left:${b.left}%; animation-duration:${b.dur}s; animation-delay:${b.delay}s;`}
     >
       <img src={b.logo} alt="" loading="lazy" />
     </li>
@@ -62,19 +78,49 @@ const bubbles = logos.map((logo, i) => {
     background: #fff; border: 1px solid var(--line);
     border-radius: 50%;
     box-shadow: 0 16px 32px -12px rgba(17, 21, 28, 0.44);
-    animation: pb-float var(--dur, 4s) ease-in-out var(--delay, 0s) infinite;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-duration: 4s; /* overridden inline per bubble */
   }
   .pb-item img { width: 60%; height: 60%; object-fit: contain; }
-  /* scatter around the photo's perimeter */
-  .pb-item:nth-child(1) { top: 1%;    right: -9%; }
-  .pb-item:nth-child(2) { top: 40%;   left: -11%; }
-  .pb-item:nth-child(3) { bottom: 1%; right: -7%; }
-  /* per-bubble path: amplitude, drift and rotation all come from CSS vars */
-  @keyframes pb-float {
-    0%, 100% { transform: translate(0, 0) rotate(calc(var(--rot, 5deg) * -1)); }
-    30%      { transform: translate(var(--dx, 6px), var(--dy, -18px)) rotate(var(--rot, 5deg)); }
-    65%      { transform: translate(calc(var(--dx, 6px) * -0.5), calc(var(--dy, -18px) * 0.45)) rotate(calc(var(--rot, 5deg) * -0.4)); }
+
+  /* six genuinely different drift paths — assigned per bubble via class so
+     Astro's keyframe scoping still resolves (inline animation-name would not) */
+  .pb-a { animation-name: pb-a; }
+  .pb-b { animation-name: pb-b; }
+  .pb-c { animation-name: pb-c; }
+  .pb-d { animation-name: pb-d; }
+  .pb-e { animation-name: pb-e; }
+  .pb-f { animation-name: pb-f; }
+
+  @keyframes pb-a {
+    0%, 100% { transform: translate(0, 0) rotate(-4deg); }
+    50%      { transform: translate(7px, -20px) rotate(6deg); }
   }
+  @keyframes pb-b {
+    0%, 100% { transform: translate(0, 0) rotate(5deg); }
+    50%      { transform: translate(-9px, -15px) rotate(-6deg); }
+  }
+  @keyframes pb-c {
+    0%, 100% { transform: translate(0, -3px) rotate(-3deg); }
+    33%      { transform: translate(10px, -11px) rotate(5deg); }
+    66%      { transform: translate(-7px, -19px) rotate(-2deg); }
+  }
+  @keyframes pb-d {
+    0%, 100% { transform: translate(0, 0) rotate(2deg); }
+    25%      { transform: translate(-6px, -23px) rotate(-7deg); }
+    60%      { transform: translate(6px, -7px) rotate(6deg); }
+  }
+  @keyframes pb-e {
+    0%, 100% { transform: translate(0, 0) rotate(3deg); }
+    40%      { transform: translate(12px, -13px) rotate(-5deg); }
+    72%      { transform: translate(3px, -25px) rotate(7deg); }
+  }
+  @keyframes pb-f {
+    0%, 100% { transform: translate(0, 0) rotate(-6deg); }
+    50%      { transform: translate(-11px, -12px) rotate(8deg); }
+  }
+
   @media (prefers-reduced-motion: reduce) { .pb-item { animation: none; } }
   @media (max-width: 48rem) { .pb { display: none; } }
 </style>
