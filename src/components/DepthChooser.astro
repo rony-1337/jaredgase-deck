@@ -34,16 +34,15 @@ const iconBase = "/img/projects/icons/";
     }
   </ul>
 
-  <!-- Customize: visible but disabled for now (the live build modal is the
-       last thing to wire up). Restore the trigger when it's ready. -->
-  <button class="customize is-disabled" type="button" disabled aria-disabled="true">
+  <!-- Customize: the live, understated fourth option. -->
+  <a class="customize" href={liveMode.href}>
     <span class="pulse" aria-hidden="true"><span class="pulse-dot" /></span>
     <span class="customize-body">
       <span class="customize-name">{liveMode.name}</span>
       <span class="customize-note">{liveMode.blurb}</span>
     </span>
-    <span class="customize-meta">Coming soon</span>
-  </button>
+    <span class="arrow" aria-hidden="true">→</span>
+  </a>
 </section>
 
 <style>

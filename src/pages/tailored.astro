@@ -1,0 +1,208 @@
+---
+// The audience-facing tailored run. The Customize builder generates a spec,
+// stores it in sessionStorage, and sends the presenter here. This page renders
+// that spec client-side (the spec is created at runtime, not at build), styled
+// with the deck's own tokens so it reads as a native run. Locked project facts
+// that aren't in the spec (title, org, dates) come from the embedded catalog.
+import Base from "../layouts/Base.astro";
+import DeckChrome from "../components/DeckChrome.astro";
+import catalog from "../lib/tailor/catalog.json";
+import "../styles/deck.css";
+
+// slug -> the locked, presentation-relevant facts the spec doesn't carry
+const locked = Object.fromEntries(
+  catalog.projects.map((p) => [p.slug, { title: p.title, org: p.org, dates: p.dates }]),
+);
+
+// a real sample spec (from an actual generation) so /tailored?demo previews the
+// design without running the builder. Not used in the normal flow.
+const demoSpec = {
+  company: "Qualcomm", role: "Senior Web UX Designer", date: "Friday, August 7",
+  intro: {
+    headline: "Platform Design at Scale, AI-Native by Default",
+    subhead:
+      "End-to-end design leadership on Intuit's Virtual Expert Platform: one system for 30,000+ experts, reusable platform components, and AI that beat the tools it replaced.",
+  },
+  projects: [
+    { slug: "salesforce-to-iep", rank: 1,
+      oneLine: "Owned end-to-end design to move Intuit's entire expert workforce onto a durable in-house platform, then pushed past parity with AI.",
+      goal: "Lead design end to end to move 30,000 plus experts off aging Salesforce workflows onto Intuit's own platform (IEP), before peak tax season, with no drop in performance.",
+      impact: "A multi-team platform launch that beat the system it replaced. Handle time down 5 percent to 17.5 minutes, tNPS up, and escalations cut about 40 percent with gen-AI self-help.",
+      featuredMetrics: [
+        { value: "82%", label: "tools readiness, up 8% over Salesforce" },
+        { value: "17.5 min", label: "average handle time, down 5%" },
+        { value: "24%", label: "of issues deflected by gen-AI self-help" },
+        { value: "+1.1", label: "tNPS improvement" },
+      ] },
+    { slug: "ai-native", rank: 2,
+      oneLine: "Evolved a multi-tool enterprise workspace into one command center, where dynamic cards bring the work to the expert.",
+      goal: "Set the vision for a next generation, AI-native IEP, built on one idea: the work comes to the expert instead of the expert going to find it.",
+      impact: "Research-driven vision across fifteen rounds that shaped the AI Native IEP program, piloted with 400 plus experts and adopted as the new baseline.",
+      featuredMetrics: [
+        { value: "15", label: "research rounds over five months" },
+        { value: "400+", label: "experts in the pilot before it became the baseline" },
+      ] },
+    { slug: "human-intervention-agent", rank: 3,
+      oneLine: "Redesigned a complex cross-team handoff with gen-AI self-help, automatic context, and reusable platform components.",
+      goal: "Redesign how Tier 1 experts reach Tier 2 SMEs inside IEP. Cut friction, automate context, and fold in gen-AI so the system deflects escalations that never needed a human.",
+      impact: "Follow-me-home research and platform level components replaced a context free chat: a quarter of escalations deflected in the cohort, about 20 minutes saved on each one.",
+      featuredMetrics: [
+        { value: "24%", label: "of escalations deflected in cohort testing" },
+        { value: "20 min", label: "saved per deflected escalation" },
+      ] },
+  ],
+};
+---
+
+<Base header={false} title="Tailored run" bodyClass="is-deck">
+  <DeckChrome current="customize" />
+  <div class="deck-frame" aria-hidden="true"></div>
+
+  <div id="trun"></div>
+
+  <!-- locked facts the client merges with the tailored spec -->
+  <script type="application/json" id="locked-data" set:html={JSON.stringify(locked)} />
+  <!-- sample spec for /tailored?demo (design preview only) -->
+  <script type="application/json" id="demo-data" set:html={JSON.stringify(demoSpec)} />
+</Base>
+
+<script>
+  interface Metric { value: string; label: string; relative?: string }
+  interface Proj { slug: string; rank: number; oneLine: string; goal: string; impact: string; featuredMetrics: Metric[] }
+  interface Spec {
+    company: string; role: string; date: string;
+    intro: { headline: string; subhead: string };
+    projects: Proj[];
+  }
+
+  const locked: Record<string, { title: string; org: string; dates: string }> =
+    JSON.parse(document.getElementById("locked-data")?.textContent || "{}");
+
+  let spec: Spec | null = null;
+  try { spec = JSON.parse(sessionStorage.getItem("tailorSpec") || "null"); } catch {}
+  // design preview: /tailored?demo shows a sample run when nothing is stored
+  if (!spec && /[?&]demo\b/.test(location.search)) {
+    try { spec = JSON.parse(document.getElementById("demo-data")?.textContent || "null"); } catch {}
+  }
+
+  const root = document.getElementById("trun")!;
+  const el = (tag: string, cls?: string, text?: string) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+
+  if (!spec || !spec.projects?.length) {
+    const s = el("section", "scene scene--full snap");
+    const inner = el("div", "scene-inner t-empty");
+    inner.append(
+      el("p", "eyebrow", "No tailored run yet"),
+      el("h1", "t-headline", "Nothing to present"),
+      el("p", "t-sub", "Build a run from the Customize page, then come back here."),
+    );
+    const a = el("a", "t-cta", "Go to Customize →") as HTMLAnchorElement;
+    a.href = "/customize";
+    inner.append(a);
+    s.append(inner);
+    root.append(s);
+  } else {
+    // 1 — branded title scene
+    const title = el("section", "scene scene--full snap");
+    const tin = el("div", "scene-inner t-title");
+    tin.append(el("p", "eyebrow accent", spec.company || "Tailored run"));
+    tin.append(el("h1", "t-headline", spec.intro.headline));
+    tin.append(el("p", "t-sub", spec.intro.subhead));
+    const by = el("p", "t-byline");
+    by.append(el("span", "t-by-role", [spec.role, spec.date].filter(Boolean).join("  ·  ")));
+    tin.append(by);
+    title.append(tin);
+    root.append(title);
+
+    // 2 — one scene per selected project
+    spec.projects.forEach((p) => {
+      const lk = locked[p.slug] ?? { title: p.slug, org: "", dates: "" };
+      const s = el("section", "scene scene--full snap");
+      const inner = el("div", "scene-inner t-proj");
+
+      const eyebrow = el("p", "eyebrow");
+      eyebrow.append(el("span", "t-kicker", `Selected work · 0${p.rank}`));
+      if (lk.org) eyebrow.append(el("span", "t-org", lk.org));
+      inner.append(eyebrow);
+
+      inner.append(el("h2", "t-proj-title", lk.title));
+      inner.append(el("p", "t-lede", p.oneLine));
+
+      const body = el("div", "t-body");
+      if (p.goal) { const g = el("p"); g.append(el("span", "t-tag", "Goal ")); g.append(document.createTextNode(p.goal)); body.append(g); }
+      if (p.impact) { const i = el("p"); i.append(el("span", "t-tag", "Impact ")); i.append(document.createTextNode(p.impact)); body.append(i); }
+      inner.append(body);
+
+      if (p.featuredMetrics?.length) {
+        const ul = el("ul", "t-metrics");
+        p.featuredMetrics.forEach((m) => {
+          const li = el("li");
+          li.append(el("p", "t-metric-val", m.value), el("p", "t-metric-label", m.label));
+          ul.append(li);
+        });
+        inner.append(ul);
+      }
+      s.append(inner);
+      root.append(s);
+    });
+  }
+</script>
+
+<style>
+  .t-title, .t-proj, .t-empty { max-width: var(--container); margin-inline: auto; width: 100%; }
+
+  .t-headline {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: var(--t-hero); line-height: 1.05; letter-spacing: -0.02em;
+    color: var(--ink); margin-top: var(--s-4); text-wrap: balance;
+  }
+  .t-sub {
+    margin-top: var(--s-5); max-width: 42ch;
+    font-size: clamp(1.15rem, 1rem + 0.8vw, 1.6rem); line-height: 1.5; color: var(--ink-soft);
+  }
+  .t-byline { margin-top: var(--s-6); }
+  .t-by-role {
+    font-family: var(--font-mono); font-size: var(--t-small);
+    letter-spacing: 0.04em; color: var(--ink-faint);
+  }
+
+  .eyebrow .t-org { margin-left: var(--s-3); color: var(--ink-faint); }
+  .t-proj-title {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(2rem, 1rem + 4vw, 3.4rem); line-height: 1.08;
+    letter-spacing: -0.02em; color: var(--ink); margin-top: var(--s-3); text-wrap: balance;
+  }
+  .t-lede {
+    margin-top: var(--s-4); max-width: 46ch;
+    font-size: clamp(1.15rem, 1rem + 0.7vw, 1.5rem); line-height: 1.45; color: var(--ink);
+  }
+  .t-body { margin-top: var(--s-5); display: grid; gap: var(--s-3); max-width: 60ch; }
+  .t-body p { color: var(--ink-soft); line-height: 1.55; font-size: var(--t-body); }
+  .t-tag {
+    font-family: var(--font-mono); font-size: var(--t-label);
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-ink);
+  }
+
+  .t-metrics {
+    margin-top: clamp(var(--s-5), 3vh, var(--s-8));
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: var(--s-5); list-style: none; padding: 0;
+  }
+  .t-metric-val {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.7rem, 1rem + 2vw, 2.6rem); letter-spacing: -0.02em; color: var(--ink);
+  }
+  .t-metric-label { margin-top: var(--s-2); color: var(--ink-soft); font-size: var(--t-small); line-height: 1.35; }
+
+  .t-empty { text-align: left; }
+  .t-cta {
+    display: inline-block; margin-top: var(--s-6);
+    font-family: var(--font-mono); font-size: var(--t-small); color: var(--accent-ink);
+    border-bottom: 1px solid var(--accent-ink); padding-bottom: 2px;
+  }
+</style>

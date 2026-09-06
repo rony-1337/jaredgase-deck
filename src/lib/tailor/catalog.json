@@ -1,0 +1,229 @@
+{
+  "projects": [
+    {
+      "slug": "salesforce-to-iep",
+      "title": "Migration for 30,000+ Product Experts",
+      "oneLine": "Moved Intuit's entire expert workforce onto a durable in-house platform, then pushed past parity with AI.",
+      "role": "End to end design lead. Product design, service design, research, and design system.",
+      "org": "Intuit, Virtual Expert Platform",
+      "dates": "Jul 2024 to Apr 2025",
+      "sector": "Enterprise, fintech, customer service",
+      "domain": [
+        "enterprise",
+        "fintech",
+        "platform",
+        "ai-native",
+        "service-design"
+      ],
+      "skills": [
+        "systems",
+        "strategy",
+        "execution",
+        "research",
+        "influence"
+      ],
+      "goal": "Lead design end to end to move 30,000 plus experts off aging Salesforce workflows onto Intuit's own platform (IEP), before peak tax season, with no drop in performance.",
+      "impact": "A high-impact launch that beat the system it replaced. Handle time down 5 percent to 17.5 minutes, tNPS up, and escalations cut about 40 percent with gen-AI self-help.",
+      "overviewBlurb": "Led design to move 30,000 experts off aging Salesforce workflows onto Intuit's own platform, then used AI to beat the old system, not just match it.",
+      "panelSummary": [
+        "30,000 TurboTax experts across many roles relied on outdated Salesforce workflows that broke under peak tax season.",
+        "I led design end to end: research, a capability framework to scope the whole system, design execution across dozens of workflows, and the rollout.",
+        "I did not stop at parity. I added gen-AI self-help, automatic call context, and smarter routing so the new platform beat the old one.",
+        "Handle time down to 17.5 minutes, tNPS up 1.1, tools readiness up to 82 percent, and the frameworks are still used for cross-company work."
+      ],
+      "metrics": [
+        {
+          "value": "17.5 min",
+          "label": "average handle time, down 5%",
+          "relative": "Faster resolution, worth millions in savings"
+        },
+        {
+          "value": "+1.1",
+          "label": "tNPS improvement",
+          "relative": "Higher expert satisfaction"
+        },
+        {
+          "value": "82%",
+          "label": "tools readiness, up 8% over Salesforce",
+          "relative": "More reliable than the system it replaced"
+        },
+        {
+          "value": "40%",
+          "label": "fewer escalations year over year",
+          "relative": "Far fewer handoffs between tiers"
+        },
+        {
+          "value": "24%",
+          "label": "of issues deflected by gen-AI self-help",
+          "relative": "AI resolved a quarter of issues before a human stepped in"
+        }
+      ],
+      "caseStudy": true,
+      "order": 1
+    },
+    {
+      "slug": "concierge",
+      "title": "TurboTax Concierge: A New Seller Archetype",
+      "oneLine": "Turned a scheduling tool into a growth system that influences more than half of conversions.",
+      "role": "E2E design lead. Product design, service design, design system, and user research.",
+      "org": "Intuit, Virtual Expert Platform",
+      "dates": "Oct 2025 to May 2026",
+      "sector": "Enterprise, fintech, sales",
+      "domain": [
+        "fintech",
+        "platform",
+        "ai-native",
+        "service-design"
+      ],
+      "skills": [
+        "zero-to-one",
+        "strategy",
+        "systems",
+        "execution"
+      ],
+      "goal": "Grow Concierge from a simple scheduling tool into an end to end engagement system that drives activation and conversion at scale.",
+      "impact": "Now influences 53 percent of conversions and supports about 5,500 expert calls a day, as part of a $250M revenue program.",
+      "overviewBlurb": "Built Concierge from zero to one inside the platform, growing it from a scheduling tool into a connected system that drives activation and conversion.",
+      "panelSummary": [
+        "Concierge started as a scheduling tool. I helped grow it into an end to end system for inbound and outbound expert engagement at scale.",
+        "Across versions 2 through 3.5, the work tied design decisions directly to activation and conversion.",
+        "Today it influences 53 percent of conversions and supports around 5,500 calls a day, as part of a $250M revenue program.",
+        "I also defined where it goes next, mapping Concierge as the entry point into Intuit's broader expert platform."
+      ],
+      "metrics": [
+        {
+          "value": "53%",
+          "label": "of conversions influenced",
+          "relative": "Touches more than half of conversions"
+        },
+        {
+          "value": "5,500",
+          "label": "expert calls supported daily",
+          "relative": "Thousands of inbound and outbound calls a day"
+        },
+        {
+          "value": "$250M",
+          "label": "revenue program this work is part of",
+          "relative": "Part of a quarter-billion-dollar revenue program"
+        }
+      ],
+      "caseStudy": true,
+      "order": 2
+    },
+    {
+      "slug": "human-intervention-agent",
+      "title": "Agentic (AI)-Powered Support, Expert to Expert",
+      "oneLine": "Redesigned how Tier 1 experts reach Tier 2 SMEs, with gen-AI self-help and automatic context, so a quarter of escalations never needed a human.",
+      "role": "End to end design lead. Product design, service design, research, and design system.",
+      "org": "Intuit, Virtual Expert Platform",
+      "dates": "Dec 2024 to Mar 2025",
+      "sector": "Enterprise, fintech, customer service",
+      "domain": [
+        "enterprise",
+        "fintech",
+        "platform",
+        "ai-native",
+        "service-design"
+      ],
+      "skills": [
+        "systems",
+        "execution",
+        "research",
+        "influence"
+      ],
+      "goal": "Redesign how Tier 1 experts reach Tier 2 SMEs inside IEP. Cut friction, automate context, and fold in gen-AI so the system deflects escalations that never needed a human.",
+      "impact": "A quarter of escalations deflected in the cohort, about 20 minutes saved on each one, and Tier 1 escalations down roughly 40 percent year over year.",
+      "overviewBlurb": "Redesigned the Tier 1 to Tier 2 handoff inside IEP. Gen-AI self-help, an automatic call summary, and attribute based routing replaced a context free Salesforce chat, so a quarter of escalations resolved without a human.",
+      "panelSummary": [
+        "Tier 1 experts reached Tier 2 SMEs through an archaic Salesforce chat that carried no context and added up to two minutes to every handoff.",
+        "I led design end to end: follow-me-home research, the escalation flows and edge cases, platform level components, and the rollout.",
+        "The new handover added gen-AI self-help and de-escalation, an automatic call summary, and attribute based routing straight to the right Tier 2 expert.",
+        "A quarter of escalations deflected in the cohort, roughly 20 minutes saved on each one, and escalations down about 40 percent year over year."
+      ],
+      "metrics": [
+        {
+          "value": "40%",
+          "label": "fewer Tier 1 escalations year over year",
+          "relative": "Far fewer handoffs between tiers"
+        },
+        {
+          "value": "24%",
+          "label": "of escalations deflected in cohort testing",
+          "relative": "AI self-help resolved a quarter before a human was needed"
+        },
+        {
+          "value": "20 min",
+          "label": "saved per deflected escalation",
+          "relative": "Time back on every handoff avoided"
+        },
+        {
+          "value": "6.1%",
+          "label": "escalation rate in the cohort, down from 10.2%",
+          "relative": "Escalations nearly halved where it was tested"
+        },
+        {
+          "value": "80+",
+          "label": "expert tooling readiness, held above target",
+          "relative": "More reliable than the system it replaced"
+        }
+      ],
+      "caseStudy": true,
+      "order": 5
+    },
+    {
+      "slug": "ai-native",
+      "title": "AI Native IEP: Reimagining the Expert Workspace",
+      "oneLine": "Evolved IEP from seven tools and constant tab switching into one command center, where dynamic cards bring the work to the expert.",
+      "role": "End to end design lead. Product design, service design, and design system.",
+      "org": "Intuit, Virtual Expert Platform",
+      "dates": "Jul 2025 to Jan 2026",
+      "sector": "Enterprise, fintech, customer service",
+      "domain": [
+        "enterprise",
+        "fintech",
+        "platform",
+        "ai-native",
+        "service-design"
+      ],
+      "skills": [
+        "strategy",
+        "systems",
+        "research",
+        "influence"
+      ],
+      "goal": "Set the vision for a next generation, AI-native IEP, built on one idea: the work comes to the expert instead of the expert going to find it.",
+      "impact": "Shaped the AI Native IEP program, which piloted with 400 plus experts and became the new baseline, retiring the legacy UI.",
+      "overviewBlurb": "Led the vision for an AI native IEP. Collapsed seven tools into one command center and designed dynamic cards that surface the right action from the live conversation, so the work comes to the expert instead of the expert going to find it.",
+      "panelSummary": [
+        "IEP was static and manual. Experts navigated seven separate tools per call and cleared cache nearly three times a day just to keep working.",
+        "I led design end to end across fifteen research rounds, defining the principles and the provocation for a next generation, AI native workspace.",
+        "Intuit Assist became a persistent command center, and dynamic workflow cards surfaced the right action from the live conversation, one at a time, with the expert always in control.",
+        "The work shaped the AI Native IEP program, which piloted with 400 plus experts and became the new baseline, retiring the legacy UI."
+      ],
+      "metrics": [
+        {
+          "value": "7 to 1",
+          "label": "tools collapsed into one command center",
+          "relative": "One hub instead of seven separate tools"
+        },
+        {
+          "value": "15",
+          "label": "research rounds over five months",
+          "relative": "Deep, repeated validation with experts and leaders"
+        },
+        {
+          "value": "400+",
+          "label": "experts in the pilot before it became the baseline",
+          "relative": "Validated at scale, then retired the legacy UI"
+        },
+        {
+          "value": "2.7x",
+          "label": "daily cache clears the new workspace removes",
+          "relative": "No more swivel-chair resets in the middle of a call"
+        }
+      ],
+      "caseStudy": true,
+      "order": 6
+    }
+  ]
+}

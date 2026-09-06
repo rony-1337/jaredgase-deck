@@ -5,6 +5,9 @@ node_modules/
 dist/
 .astro/
 
+# netlify CLI working dir
+.netlify/
+
 # env (the Customize builder key lives here, never commit it)
 .env
 .env.production
