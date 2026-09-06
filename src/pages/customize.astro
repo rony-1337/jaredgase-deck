@@ -6,11 +6,12 @@ import { personas } from "../data/personas";
 <Base
   mode="customize"
   theme="dark"
+  modeToggle={false}
   title="Customize"
   description="Build a tailored version of the presentation live, from approved building blocks."
 >
   <section class="container cz">
-    <p class="eyebrow accent">Live · built on the call</p>
+    <p class="eyebrow accent"><span class="live-dot" aria-hidden="true"></span>Live</p>
     <h1 class="cz-title">Let's build your version</h1>
     <p class="cz-lede">
       Drop in the company, the role, and the job description. I assemble a tailored
@@ -44,28 +45,32 @@ import { personas } from "../data/personas";
             <option value="45">45 minutes</option>
             <option value="60">60 minutes</option>
           </select>
-          <span class="field-hint">More time pulls in more projects.</span>
         </label>
 
-        <label class="field">
+        <label class="field field--full">
           <span class="field-label">Audience</span>
           <select id="cz-audience">
             {personas.map((p) => <option value={p.id}>{p.name}</option>)}
           </select>
-          <span class="field-hint">Sets the emphasis.</span>
         </label>
       </div>
 
       <label class="field">
-        <span class="field-label">Job description link</span>
-        <input id="cz-jdurl" type="url" placeholder="Greenhouse, Lever, Ashby, or a plain careers page" />
-        <span class="field-hint">Works when the text is in the page source. Workday and LinkedIn usually need a paste.</span>
+        <span class="field-label">Job description</span>
+        <textarea id="cz-jdtext" rows="6" placeholder="Paste the job posting — or just the link to it (Greenhouse, Lever, Ashby, or a plain careers page)."></textarea>
+        <span class="field-hint">Paste the full text for the best result. A link works when the posting is in the page source; otherwise paste it or add an image.</span>
       </label>
 
-      <label class="field">
-        <span class="field-label">Or paste the job description</span>
-        <textarea id="cz-jdtext" rows="5" placeholder="Paste the full posting here. This always works."></textarea>
-      </label>
+      <div class="jd-extra">
+        <input id="cz-jdimage" type="file" accept="image/*" hidden />
+        <button class="jd-image-btn" id="jdImageBtn" type="button">
+          <span class="jd-plus" aria-hidden="true">+</span> Add image
+        </button>
+        <span class="jd-image-chip" id="jdImageChip" hidden>
+          <span id="jdImageName"></span>
+          <button class="jd-image-x" id="jdImageClear" type="button" aria-label="Remove image">✕</button>
+        </span>
+      </div>
 
       <button class="build-btn" id="buildBtn" type="button">Build presentation →</button>
       <p class="build-status" id="buildStatus" role="status" hidden></p>
@@ -75,7 +80,7 @@ import { personas } from "../data/personas";
     <div class="explain">
       <div class="explain-head">
         <h2 class="explain-title">What happens when you hit build</h2>
-        <span class="badge">Local · runs on your machine</span>
+        <span class="badge">Local</span>
       </div>
       <p class="explain-body">
         The job description is read and classified, projects are selected and ranked for
@@ -96,6 +101,7 @@ import { personas } from "../data/personas";
   // stash the returned spec, and open the tailored run. The API key never
   // touches this page — it lives only in the local server's env.
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement | null;
+  const val = (id: string) => $(id)?.value.trim() ?? "";
   const btn = document.getElementById("buildBtn") as HTMLButtonElement | null;
   const status = document.getElementById("buildStatus");
 
@@ -106,25 +112,50 @@ import { personas } from "../data/personas";
     status.dataset.kind = kind;
   };
 
+  // optional JD image (a screenshot of the posting) → base64 data URL
+  let jdImage: string | null = null;
+  const fileInput = $("cz-jdimage");
+  const chip = document.getElementById("jdImageChip");
+  const chipName = document.getElementById("jdImageName");
+  document.getElementById("jdImageBtn")?.addEventListener("click", () => fileInput?.click());
+  fileInput?.addEventListener("change", () => {
+    const f = fileInput.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      jdImage = String(reader.result);
+      if (chipName) chipName.textContent = f.name;
+      if (chip) chip.hidden = false;
+    };
+    reader.readAsDataURL(f);
+  });
+  document.getElementById("jdImageClear")?.addEventListener("click", () => {
+    jdImage = null;
+    if (fileInput) fileInput.value = "";
+    if (chip) chip.hidden = true;
+  });
+
   btn?.addEventListener("click", async () => {
-    const company = $("cz-company")?.value.trim() ?? "";
-    const role = $("cz-role")?.value.trim() ?? "";
-    const date = $("cz-date")?.value.trim() ?? "";
+    const company = val("cz-company");
+    const role = val("cz-role");
+    const date = val("cz-date");
     const durationMin = Number($("cz-length")?.value) || 30;
     const audience = $("cz-audience")?.value ?? "panel";
-    const jdUrl = $("cz-jdurl")?.value.trim() ?? "";
-    const jdText = ($("cz-jdtext") as unknown as HTMLTextAreaElement | null)?.value.trim() ?? "";
+    const jdText = val("cz-jdtext");
 
     if (!company || !role) { setStatus("Add the company and role first.", "err"); return; }
-    if (jdText.length < 40 && !jdUrl) { setStatus("Paste the job description (or add a link).", "err"); return; }
+    if (jdText.length < 20 && !jdImage) {
+      setStatus("Add the job description — paste it, drop in a link, or add an image.", "err");
+      return;
+    }
 
     btn.disabled = true;
-    setStatus("Reading the job description and tailoring the run… (~10–15s)", "busy");
+    setStatus("Reading the job description and tailoring the run… (~10–20s)", "busy");
     try {
       const res = await fetch("/api/tailor", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ company, role, date, durationMin, audience, jdUrl, jdText }),
+        body: JSON.stringify({ company, role, date, durationMin, audience, jdText, jdImage }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
@@ -150,9 +181,21 @@ import { personas } from "../data/personas";
     font-size: var(--t-h1);
     margin-top: var(--s-4);
   }
+  .cz .eyebrow.accent { display: inline-flex; align-items: center; gap: 0.55em; }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex: none;
+    background: var(--accent);
+    animation: live-ping 1.8s ease-out infinite;
+  }
+  @keyframes live-ping {
+    0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 65%, transparent); }
+    70%  { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 0%, transparent); }
+    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+  }
+  @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
   .cz-lede {
     margin-top: var(--s-5);
-    max-width: 52ch;
+    max-width: none;
     color: var(--ink-soft);
     font-size: 1.125rem;
     line-height: 1.55;
@@ -169,9 +212,12 @@ import { personas } from "../data/personas";
   }
   .field-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: var(--s-5);
+    align-items: start;
   }
+  .field--full { grid-column: 1 / -1; }
+  @media (max-width: 34rem) { .field-grid { grid-template-columns: 1fr; } }
   .field {
     display: grid;
     gap: var(--s-2);
@@ -187,6 +233,7 @@ import { personas } from "../data/personas";
   .field select,
   .field textarea {
     width: 100%;
+    box-sizing: border-box;
     padding: 0.7rem 0.85rem;
     background: var(--paper);
     border: 1px solid var(--line);
@@ -194,6 +241,16 @@ import { personas } from "../data/personas";
     color: var(--ink);
     font: inherit;
     font-size: var(--t-small);
+    line-height: 1.4;
+  }
+  /* normalize the native select so it matches the text inputs' height exactly */
+  .field select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238c8f96' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
   }
   .field textarea {
     resize: vertical;
@@ -245,6 +302,28 @@ import { personas } from "../data/personas";
   .build-status[data-kind="ok"] { color: var(--accent-ink); }
   .build-status[data-kind="err"] { color: #e06666; }
 
+  /* "+ Add image" affordance for a JD screenshot */
+  .jd-extra { display: flex; align-items: center; gap: var(--s-4); flex-wrap: wrap; margin-top: calc(-1 * var(--s-2)); }
+  .jd-image-btn {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    padding: 0.5rem 0.9rem;
+    background: transparent; color: var(--ink-soft);
+    border: 1px dashed var(--line); border-radius: var(--radius-s);
+    font: inherit; font-size: var(--t-small); cursor: pointer;
+    transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
+  }
+  .jd-image-btn:hover { color: var(--accent-ink); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .jd-plus { font-size: 1.15em; line-height: 1; }
+  .jd-image-chip {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    font-family: var(--font-mono); font-size: var(--t-label); color: var(--ink-soft);
+  }
+  .jd-image-x {
+    background: none; border: 0; color: var(--ink-faint); cursor: pointer;
+    font-size: var(--t-label); padding: 0 2px; line-height: 1;
+  }
+  .jd-image-x:hover { color: var(--accent-ink); }
+
   .explain {
     margin-top: var(--s-10);
   }
@@ -269,25 +348,8 @@ import { personas } from "../data/personas";
   }
   .explain-body {
     color: var(--ink-soft);
-    max-width: 56ch;
+    max-width: none;
     line-height: 1.55;
-  }
-
-  .log {
-    margin-top: var(--s-5);
-    padding: var(--s-5);
-    background: #090c12;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    overflow-x: auto;
-    min-height: 18rem;
-  }
-  .log code {
-    font-family: var(--font-mono);
-    font-size: 0.82rem;
-    line-height: 1.7;
-    color: #aeb9ca;
-    white-space: pre;
   }
   .safety {
     margin-top: var(--s-5);
@@ -296,6 +358,6 @@ import { personas } from "../data/personas";
     color: var(--ink);
     font-size: var(--t-small);
     line-height: 1.55;
-    max-width: 56ch;
+    max-width: none;
   }
 </style>

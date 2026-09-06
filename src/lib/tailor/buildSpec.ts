@@ -27,6 +27,7 @@ export interface TailorInput {
   audience: Audience;
   durationMin: number; // meeting length in minutes — drives how much to pull in
   jdText: string;
+  jdImage?: string; // optional data URL (data:image/...;base64,...) of a JD screenshot
 }
 
 /** meeting length -> how many projects and how deep to go */
@@ -128,6 +129,7 @@ Return ONLY a JSON object (no prose, no code fences) with this exact shape:
 - Order "projects" by rank (best first).`;
 
 function userMessage(input: TailorInput, maxProjects: number, depth: string): string {
+  const jd = input.jdText.trim();
   return [
     `COMPANY: ${input.company}`,
     `ROLE: ${input.role}`,
@@ -135,7 +137,7 @@ function userMessage(input: TailorInput, maxProjects: number, depth: string): st
     `MEETING LENGTH: ${input.durationMin} minutes — target about ${maxProjects} project(s), depth: ${depth}.`,
     ``,
     `JOB DESCRIPTION:`,
-    input.jdText.trim(),
+    jd || "(provided as the attached image — read the job description from it)",
     ``,
     `PROJECT CATALOG (the only allowed source of truth):`,
     JSON.stringify(catalog.projects, null, 2),
@@ -242,12 +244,24 @@ export function validateSpec(raw: any, input: TailorInput, maxProjects = MAX_PRO
 export async function buildSpec(input: TailorInput): Promise<TailorSpec> {
   const { maxProjects, depth } = planForDuration(input.durationMin);
   const client = new Anthropic(); // reads ANTHROPIC_API_KEY from env
+
+  // build the user turn: an optional JD screenshot (Claude reads it) + the text
+  const content: any[] = [];
+  const imgMatch = input.jdImage?.match(/^data:(image\/[a-z.+-]+);base64,(.+)$/i);
+  if (imgMatch) {
+    content.push({
+      type: "image",
+      source: { type: "base64", media_type: imgMatch[1], data: imgMatch[2] },
+    });
+  }
+  content.push({ type: "text", text: userMessage(input, maxProjects, depth) });
+
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: 8000,
     output_config: { effort: EFFORT },
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: userMessage(input, maxProjects, depth) }],
+    messages: [{ role: "user", content }],
   });
 
   const textBlock = response.content.find((b) => b.type === "text");

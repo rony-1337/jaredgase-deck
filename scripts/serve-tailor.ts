@@ -46,12 +46,12 @@ const server = createServer((req, res) => {
       const audience: Audience = AUDIENCES.includes(b.audience) ? b.audience : "panel";
       const durationMin = Math.min(120, Math.max(10, Number(b.durationMin) || 30));
       let jdText = String(b.jdText ?? "").trim();
-      const jdUrl = String(b.jdUrl ?? "").trim();
-      // if no paste but a link is given, fetch it and strip to text (works when
+      const jdImage = typeof b.jdImage === "string" ? b.jdImage : "";
+      // if the JD field is JUST a link, fetch it and strip to text (works when
       // the JD is in the page source: Greenhouse, Lever, Ashby, plain pages)
-      if (jdText.length < 40 && jdUrl) {
+      if (/^https?:\/\/\S+$/i.test(jdText)) {
         try {
-          const r = await fetch(jdUrl, { headers: { "user-agent": "Mozilla/5.0" } });
+          const r = await fetch(jdText, { headers: { "user-agent": "Mozilla/5.0" } });
           jdText = (await r.text())
             .replace(/<script[\s\S]*?<\/script>/gi, " ")
             .replace(/<style[\s\S]*?<\/style>/gi, " ")
@@ -64,12 +64,12 @@ const server = createServer((req, res) => {
           console.log(`  JD fetch failed: ${e?.message ?? e}`);
         }
       }
-      if (!company || !role || jdText.length < 40) {
-        return send(400, { error: "Company, role, and a real job description are required (paste it if the link didn't work)." });
+      if (!company || !role || (jdText.length < 40 && !jdImage)) {
+        return send(400, { error: "Company, role, and a job description (text, link, or image) are required." });
       }
-      console.log(`→ tailoring  ${company} · ${role}  (${durationMin} min, ${audience})…`);
+      console.log(`→ tailoring  ${company} · ${role}  (${durationMin} min, ${audience}${jdImage ? ", +image" : ""})…`);
       const t0 = Date.now();
-      const spec = await buildSpec({ company, role, date, audience, durationMin, jdText });
+      const spec = await buildSpec({ company, role, date, audience, durationMin, jdText, jdImage });
       console.log(`  done in ${((Date.now() - t0) / 1000).toFixed(1)}s — ${spec.projects.length} projects`);
       send(200, spec);
     } catch (e: any) {

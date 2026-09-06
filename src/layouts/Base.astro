@@ -11,6 +11,8 @@ interface Props {
   theme?: "light" | "dark";
   header?: boolean;
   footer?: boolean;
+  /** show the cross-site Normal/Presentation toggle FAB (off on tool pages) */
+  modeToggle?: boolean;
   /** optional "Next ->" destination shown in the footer */
   footerNext?: { title: string; href: string };
   bodyClass?: string; // e.g. "is-deck" to enable scroll-snap scenes
@@ -23,6 +25,7 @@ const {
   theme = "light",
   header = true,
   footer = true,
+  modeToggle = true,
   footerNext,
   bodyClass,
 } = Astro.props;
@@ -58,6 +61,6 @@ const fullTitle =
       <slot />
     </main>
     {footer && <Footer next={footerNext} />}
-    <ModeToggle />
+    {modeToggle && <ModeToggle />}
   </body>
 </html>
