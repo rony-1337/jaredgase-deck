@@ -72,7 +72,7 @@ import { personas } from "../data/personas";
         </span>
       </div>
 
-      <button class="build-btn" id="buildBtn" type="button">Build presentation →</button>
+      <button class="build-btn" id="buildBtn" type="button" disabled aria-disabled="true">Build presentation →</button>
       <p class="build-status" id="buildStatus" role="status" hidden></p>
     </div>
 
@@ -87,6 +87,22 @@ import { personas } from "../data/personas";
         this role, the framing copy is rewritten to fit the posting, and the run is
         branded to the company — then it opens as a live presentation.
       </p>
+
+      <pre class="log" id="log"><code>&gt; reading job description ............ ok
+&gt; company: Example Co ................ matched
+&gt; role: Staff Product Designer ....... ic / senior track
+&gt; signal: platform + systems ......... high
+&gt; signal: ai-native .................. high
+&gt; signal: zero-to-one ................ medium
+&gt; selecting from approved project set
+  · salesforce-to-iep .............. include  (rank 1)
+  · concierge ...................... include  (rank 2)
+  · salesforce-design-principles ... include  (rank 3)
+  · ai-strategy .................... include  (rank 4)
+&gt; copy variant ...................... panel / systems emphasis
+&gt; claims + metrics .................. locked, no free text
+&gt; build ready ....................... 0.8s</code></pre>
+
       <p class="safety">
         Every number and metric stays exactly as written and vetted. The AI reorders and
         rephrases from work already approved; it never writes a claim or a figure on its
@@ -170,6 +186,25 @@ import { personas } from "../data/personas";
       btn.disabled = false;
     }
   });
+
+  // Illustrative "what happens" log — re-stages line by line when it scrolls
+  // into view. Content is already in the DOM, so it reads fine with JS off.
+  const log = document.getElementById("log");
+  if (log) {
+    const original = log.innerHTML;
+    const play = () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const lines = original.split("\n");
+      log.innerHTML = "";
+      lines.forEach((line, i) => {
+        setTimeout(() => { log.innerHTML += (i ? "\n" : "") + line; }, i * 110);
+      });
+    };
+    const io = new IntersectionObserver((entries, obs) => {
+      for (const e of entries) if (e.isIntersecting) { play(); obs.disconnect(); }
+    }, { threshold: 0.35 });
+    io.observe(log);
+  }
 </script>
 
 <style>
@@ -318,6 +353,7 @@ import { personas } from "../data/personas";
     display: inline-flex; align-items: center; gap: 0.5em;
     font-family: var(--font-mono); font-size: var(--t-label); color: var(--ink-soft);
   }
+  .jd-image-chip[hidden] { display: none; }
   .jd-image-x {
     background: none; border: 0; color: var(--ink-faint); cursor: pointer;
     font-size: var(--t-label); padding: 0 2px; line-height: 1;
@@ -350,6 +386,22 @@ import { personas } from "../data/personas";
     color: var(--ink-soft);
     max-width: none;
     line-height: 1.55;
+  }
+  .log {
+    margin-top: var(--s-5);
+    padding: var(--s-5);
+    background: #090c12;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    min-height: 18rem;
+  }
+  .log code {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #aeb9ca;
+    white-space: pre;
   }
   .safety {
     margin-top: var(--s-5);
